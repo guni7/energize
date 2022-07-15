@@ -1,0 +1,1 @@
+let WALLET_NOT_FOUND = ""
