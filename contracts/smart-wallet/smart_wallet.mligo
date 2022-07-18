@@ -1,4 +1,3 @@
-#include "./errors.mligo" "Errors"
 
 type invst_token_address = address
 
@@ -11,7 +10,7 @@ type token_details = {
 type storage = {
   wallet_manager : address;
   nft_address : address;
-  token_balances_fa12 : (token_id, token_details) map;
+  token_balances_fa12 : (invst_token_address, token_details) map;
 }
 
 type return = operation list * storage
@@ -19,7 +18,7 @@ type return = operation list * storage
 type transfer_param_fa12 = [@layout:comb] {
   from: address;
   to : address;
-  value: nat
+  value: nat;
 }
 
 type withdraw_fa12_param = {
@@ -27,34 +26,28 @@ type withdraw_fa12_param = {
   invst_token_address : invst_token_address;
   amount : nat;
 }
-
+(*
 type withdraw_fa2_param = {
-
 }
 
 type withdraw_tez_param = {
-
 }
+*)
 
-type parameter = 
-  | WithdrawFa12 of withdraw_fa12_param
-  | WithdrawFa2 of withdraw_fa12_param
-  | WithdrawTez of withdraw_tez
+type parameter = WithdrawFa12 of withdraw_fa12_param
 
 let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return = 
-  if Tezos.get_sender <> wallet_manager_address then (failwith Errors.ONLY_WALLET_MANAGER_ALLOWED)
+  if Tezos.get_sender() <> s.wallet_manager then (failwith "ONLY_WALLET_MANAGER_ALLOWED")
   else 
-    let invst_tkn_contract : transfer_param = match (Tezos.get_entrypoint_opt ("%transfer") (p.invst_token_address) : transfer_param_fa12 contract option) with
-    | None -> (failwith Errors.INVESTMENT_TOKEN_CONTRACT_NOT_FOUND)
+    let invst_tkn_contract : transfer_param_fa12 contract = match (Tezos.get_entrypoint_opt ("%transfer") (p.invst_token_address) : transfer_param_fa12 contract option) with
+    | None -> (failwith "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND")
     | Some ctr -> ctr in
     let transfer_param : transfer_param_fa12 = {
-      to = Tezos.self_address;
       from = p.receiver_address;
-      amount = p.amount; 
+      to = Tezos.get_self_address();
+      value = p.amount; 
     } in
     let transfer_txn : operation = Tezos.transaction transfer_param 0tez invst_tkn_contract in
     ([transfer_txn], s)
 
-let main (param, storage : parameter * storage) : return = 
-  match param with 
-  | WithdrawFa12 p -> withdraw_fa12 p, storage
+let main (param, storage : withdraw_fa12_param * storage) : return = withdraw_fa12 (param, storage)
