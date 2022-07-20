@@ -1,7 +1,7 @@
 { parameter
     (pair (pair (nat %amount) (address %invst_token_address)) (address %receiver_address)) ;
   storage
-    (pair (pair (address %nft_address)
+    (pair (pair (pair %nft_address address nat)
                 (map %token_balances_fa12
                    address
                    (pair (pair (nat %balance) (nat %decimals)) (address %invst_token_address))))
