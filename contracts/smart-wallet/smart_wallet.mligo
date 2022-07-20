@@ -1,15 +1,18 @@
 
 type invst_token_address = address
+type token_address = address
+type wallet_manager_address = address
+type token_id = nat 
 
 type token_details = {
-  invst_token_address : address;
+  invst_token_address : invst_token_address;
   balance : nat;
   decimals : nat;
 }
 
 type storage = {
-  wallet_manager : address;
-  nft_address : address;
+  wallet_manager : wallet_manager_address;
+  nft_address : token_address * token_id;
   token_balances_fa12 : (invst_token_address, token_details) map;
 }
 
@@ -48,6 +51,7 @@ let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return =
       value = p.amount; 
     } in
     let transfer_txn : operation = Tezos.transaction transfer_param 0tez invst_tkn_contract in
-    ([transfer_txn], s)
+    let new_wallet_map = s in (* TODO *)
+    ([transfer_txn], new_wallet_map)
 
 let main (param, storage : withdraw_fa12_param * storage) : return = withdraw_fa12 (param, storage)
