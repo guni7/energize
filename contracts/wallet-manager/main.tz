@@ -1,0 +1,65 @@
+{ parameter
+    (pair (pair (pair (nat %amount) (address %invst_token_address))
+                (pair (address %receiver_address) (address %token_address)))
+          (pair (nat %token_id) (address %withdrawer))) ;
+  storage
+    (pair (nat %latest_owner_balance)
+          (big_map %owner_wallet_map (pair address nat) address)) ;
+  code { UNPAIR ;
+         SWAP ;
+         DUP ;
+         DUG 2 ;
+         CAR ;
+         PUSH nat 1 ;
+         COMPARE ;
+         NEQ ;
+         IF { DROP 2 ; PUSH string "ONLY_OWNER_CAN_WITHDRAW" ; FAILWITH }
+            { SWAP ;
+              DUP ;
+              DUG 2 ;
+              CDR ;
+              SWAP ;
+              DUP ;
+              DUG 2 ;
+              CDR ;
+              CAR ;
+              DUP 3 ;
+              CAR ;
+              CDR ;
+              CDR ;
+              PAIR ;
+              GET ;
+              IF_NONE { PUSH string "WALLET_NOT_FOUND" ; FAILWITH } {} ;
+              CONTRACT %withdrawFa12
+                (pair (pair (nat %amount) (address %invst_token_address)) (address %receiver_address)) ;
+              IF_NONE { PUSH string "WALLET_CONTRACT_NOT_FOUND" ; FAILWITH } {} ;
+              PUSH mutez 0 ;
+              DUP 3 ;
+              CDR ;
+              CDR ;
+              DUP 4 ;
+              CAR ;
+              CAR ;
+              CDR ;
+              DIG 4 ;
+              CAR ;
+              CAR ;
+              CAR ;
+              PAIR ;
+              PAIR ;
+              TRANSFER_TOKENS ;
+              SWAP ;
+              NIL operation ;
+              DIG 2 ;
+              CONS ;
+              PAIR } } ;
+  view "get_wallet_address"
+       (pair (address %token_address) (nat %token_id))
+       address
+       { UNPAIR ;
+         SWAP ;
+         CDR ;
+         SWAP ;
+         GET ;
+         IF_NONE { PUSH string "WALLET_NOT_FOUND" ; FAILWITH } {} } }
+

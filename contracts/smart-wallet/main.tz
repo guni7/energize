@@ -1,0 +1,37 @@
+{ parameter
+    (pair (pair (nat %amount) (address %invst_token_address)) (address %receiver_address)) ;
+  storage
+    (pair (pair (address %nft_address)
+                (map %token_balances_fa12
+                   address
+                   (pair (pair (nat %balance) (nat %decimals)) (address %invst_token_address))))
+          (address %wallet_manager)) ;
+  code { UNPAIR ;
+         DUP 2 ;
+         CDR ;
+         SENDER ;
+         COMPARE ;
+         NEQ ;
+         IF { DROP 2 ; PUSH string "ONLY_WALLET_MANAGER_ALLOWED" ; FAILWITH }
+            { DUP ;
+              CAR ;
+              CDR ;
+              CONTRACT %transfer (pair (address %from) (address %to) (nat %value)) ;
+              IF_NONE { PUSH string "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND" ; FAILWITH } {} ;
+              DUP 2 ;
+              CAR ;
+              CAR ;
+              SELF_ADDRESS ;
+              DIG 3 ;
+              CDR ;
+              PAIR 3 ;
+              SWAP ;
+              PUSH mutez 0 ;
+              DIG 2 ;
+              TRANSFER_TOKENS ;
+              SWAP ;
+              NIL operation ;
+              DIG 2 ;
+              CONS ;
+              PAIR } } }
+
