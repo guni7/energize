@@ -36,7 +36,7 @@ type withdraw_fa12_param = {
 
 type balance_of_request = [@layout:comb]{
   owner : address;
-  token_id : token_id;
+  token_id : nat;
 }
 
 type balance_of_response = [@layout:comb]{
@@ -114,16 +114,16 @@ type create_wallet_contract =
 
   type parameter = 
     | WithdrawFa12 of withdraw_fa12_param
+    | BalanceOfQuery of balance_of_query_param
+    | BalanceOfResponse of balance_of_response list
     | CreateAndCallSmartWallet of create_and_call_smart_wallet_param
 
   [@view]
-  let get_wallet_address (p, s : get_wallet_address_param * storage) : smart_wallet_address = 
-    let addr : smart_wallet_address = match (Big_map.find_opt (p.token_address, p.token_id) s.owner_wallet_map) with
-      | None -> (failwith "WALLET_NOT_FOUND" : smart_wallet_address)
-      | Some addr -> addr in
+  let get_wallet_address (p, s : get_wallet_address_param * storage) : smart_wallet_address option = 
+    let addr : smart_wallet_address option = Big_map.find_opt (p.token_address, p.token_id) s.owner_wallet_map in
     addr 
 
-  let balance_of_query (p,s : balance_of_query_param * storage) : return = 
+let balance_of_query (p,s : balance_of_query_param * storage) : return = 
     let slf_address : address = Tezos.get_self_address() in
     let cb_opt : balance_of_response list contract option = Tezos.get_entrypoint_opt "%balanceOfResponse" slf_address in
     let cb : balance_of_response list contract = match cb_opt with
@@ -139,7 +139,7 @@ type create_wallet_contract =
       | Some ep -> Tezos.transaction bp 0mutez ep in
     ([q_op], s)
 
-  let balance_of_response (p,s : balance_of_response list * storage) : return = 
+let balance_of_response (p,s : balance_of_response list * storage) : return = 
     let bal = match p with 
     | []  -> (failwith "INVALID_BAL" : nat)
     | x :: _xs -> x.balance in 
@@ -222,4 +222,6 @@ let create_and_call_smart_wallet (p,s : create_and_call_smart_wallet_param * sto
 let main (param, storage: parameter * storage) : return = 
   match param with 
   | WithdrawFa12 p -> withdraw_fa12 (p, storage)
+  | BalanceOfQuery p -> balance_of_query (p, storage)
   | CreateAndCallSmartWallet p -> create_and_call_smart_wallet (p, storage)
+  | BalanceOfResponse p -> balance_of_response (p, storage)
