@@ -1,3 +1,10 @@
+(* structs-
+  wallet manager 
+  invst token
+  nft token
+
+ *)
+
 type asset_address = address
 type wallet_manager_address = address
 type smart_wallet_address = address
@@ -51,11 +58,6 @@ type balance_of_request = [@layout:comb]{
   token_id : nat;
 }
   
-type balance_of_query_param = {
-  requests : balance_of_request list;
-  token_address : address;
-}
-
 type withdraw_fa12_param = {
   token_address : asset_address;
   token_id : token_id;
@@ -64,7 +66,6 @@ type withdraw_fa12_param = {
   invst_token_id : invst_token_id; (* remove this  *)
   amount : nat;
 }
-
 type withdraw_fa12_mgr_param = {
   token_address : asset_address;
   token_id : token_id;
@@ -73,6 +74,13 @@ type withdraw_fa12_mgr_param = {
   amount : nat;
   withdrawer : address;
 }
+type balance_of_query_param = {
+  requests : balance_of_request list;
+  token_address : address;
+  withdraw_fa12 : withdraw_fa12_mgr_param;
+}
+
+
 type token_details = {
   invst_token_address : address;
   balance : nat;
@@ -194,9 +202,6 @@ let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return =
   let wallet_manager : wallet_manager_address = match (Big_map.find_opt p.invst_token_id s.wallet_manager_map) with
     | None -> (failwith "WALLET_MANAGER_NOT_FOUND" : wallet_manager_address) 
     | Some addr -> addr in
-  let wallet_mgr_contract : withdraw_fa12_mgr_param contract = match (Tezos.get_entrypoint_opt "%withdrawFa12" wallet_manager : withdraw_fa12_mgr_param contract option) with 
-    | None -> (failwith "WALLET_MANAGER_WITHDRAW_ENTRYPOINT_NOT_FOUND")
-    | Some ctr -> ctr in 
   let withdraw_fa12_mgr_param : withdraw_fa12_mgr_param = {
     token_address = p.token_address;
     token_id = p.token_id;
@@ -205,12 +210,9 @@ let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return =
     amount = p.amount;
     withdrawer = Tezos.get_sender();
   } in 
-  let withdr_tr : operation = Tezos.transaction withdraw_fa12_mgr_param 0tez wallet_mgr_contract in
-
   let bal_of_ep : balance_of_query_param contract = match (Tezos.get_entrypoint_opt "%balanceOfQuery" wallet_manager : balance_of_query_param contract option) with 
     | None -> (failwith "WALLET_MANAGER_BALANCE_OF_ENTRYPOINT_NOT_FOUND" : balance_of_query_param contract)
     | Some ctr -> ctr in 
-
   let balance_of_query_requests : balance_of_request list = [{
     owner = Tezos.get_sender();
     token_id = (p.token_id : nat);
@@ -218,9 +220,10 @@ let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return =
   let balance_of_query : balance_of_query_param = {
     requests = balance_of_query_requests;
     token_address = (p.token_address : address) ;
+    withdraw_fa12 = withdraw_fa12_mgr_param;
   } in
   let bal_of_tr : operation = Tezos.transaction balance_of_query 0tez bal_of_ep in 
-  ([bal_of_tr; withdr_tr;], s)
+  ([bal_of_tr], s)
 
 
 let add_wallet_manager (p, s : add_wallet_manager_param * storage) : return = 

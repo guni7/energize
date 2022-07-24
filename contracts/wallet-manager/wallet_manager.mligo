@@ -7,9 +7,19 @@ type invst_token_address = address
 type wallet_manager_address = address
 type smart_wallet_address = address
 
+type withdraw_fa12_param = {
+  token_address : token_address;
+  token_id : token_id;
+  receiver_address : address;
+  invst_token_address : invst_token_address;
+  amount : nat;
+  withdrawer : address; (* not needed *)
+}
+
 type storage = {
   owner_wallet_map : (token_address * token_id, smart_wallet_address) big_map;
-  latest_owner_balance : nat;
+  recent_balance_requests : (address * nat, address) big_map; (* owner_address * token_id, token_address *)
+  withdraw_requests : (address * nat, withdraw_fa12_param) big_map;
 }
 
 type energize_param = {
@@ -25,15 +35,6 @@ type get_wallet_address_param = {
   token_id : token_id;
 }
 
-type withdraw_fa12_param = {
-  token_address : token_address;
-  token_id : token_id;
-  receiver_address : address;
-  invst_token_address : invst_token_address;
-  amount : nat;
-  withdrawer : address;
-}
-
 type balance_of_request = [@layout:comb]{
   owner : address;
   token_id : nat;
@@ -47,6 +48,7 @@ type balance_of_response = [@layout:comb]{
 type balance_of_query_param = {
   requests : balance_of_request list;
   token_address : address;
+  withdraw_fa12 : withdraw_fa12_param;
 }
 
 type transfer_param_fa12 = [@layout:comb] {
@@ -83,7 +85,6 @@ type smart_wallet_storage = {
   token_balances_fa12 : (invst_token_address, token_details) map;
 }
 
-
 type create_wallet_contract = 
   [@layout:comb]
   (* order matters because we will cross the Michelson boundary *)
@@ -103,8 +104,6 @@ type create_wallet_contract =
     token_address : token_address;
     token_id : token_id;
   }
-
-
 
   type create_smart_wallet_result =[@layout:comb]{
     create_op: operation;
@@ -137,17 +136,28 @@ let balance_of_query (p,s : balance_of_query_param * storage) : return =
     let q_op = match fa2 with
       | None -> (failwith "NO_BALANCE_OF_ENTRYPOINT" : operation)
       | Some ep -> Tezos.transaction bp 0mutez ep in
-    ([q_op], s)
+    let new_recent_balance_requests = Big_map.update (p.withdraw_fa12.withdrawer, (p.withdraw_fa12.token_id: nat)) (Some p.token_address) s.recent_balance_requests in
+    let new_withdraw_requests = Big_map.update (p.withdraw_fa12.withdrawer, (p.withdraw_fa12.token_id: nat)) (Some p.withdraw_fa12) s.withdraw_requests in
+    ([q_op], { s with recent_balance_requests = new_recent_balance_requests; withdraw_requests = new_withdraw_requests })
 
 let balance_of_response (p,s : balance_of_response list * storage) : return = 
-    let bal = match p with 
-    | []  -> (failwith "INVALID_BAL" : nat)
-    | x :: _xs -> x.balance in 
-    ([], { s with  latest_owner_balance = bal})
+    let bal_res: balance_of_response = match p with 
+    | []  -> (failwith "INVALID_BAL" : balance_of_response)
+    | x :: _xs -> x in
+    if bal_res.balance = 0n then failwith "ONLY_OWNER_CAN_TRANSFER" else
+    let token_address : address = match (Big_map.find_opt (bal_res.request.owner, bal_res.request.token_id) s.recent_balance_requests) with 
+      | None -> (failwith "NO_BALANCE_REQ_FOUND" : address)
+      | Some addr -> addr in 
+    if Tezos.get_sender() <> token_address then failwith "INCORRECT_TOKEN" else
+    let withdraw_param : withdraw_fa12_param = match (Big_map.find_opt (bal_res.request.owner, bal_res.request.token_id) s.withdraw_requests) with
+      | None -> (failwith "NO_WITHDRAW_REQ_FOUND" : withdraw_fa12_param)
+      | Some wp -> wp in
+    let transfer_tr_self = Tezos.transaction withdraw_param 0tez (Tezos.self "%withdrawFa12" : withdraw_fa12_param contract) in
+    ([transfer_tr_self], s )
 
 
   let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return = 
-    if 1n <> s.latest_owner_balance then failwith "ONLY_OWNER_CAN_WITHDRAW"
+    if Tezos.get_sender() <> Tezos.get_self_address() then failwith "ONLY_SELF_ALLOWED"
     else 
       let smart_wallet_address : smart_wallet_address = match (Big_map.find_opt (p.token_address, p.token_id) s.owner_wallet_map) with 
         | None -> (failwith "WALLET_NOT_FOUND" : smart_wallet_address) 
@@ -170,7 +180,10 @@ let balance_of_response (p,s : balance_of_response list * storage) : return =
 UNPAIR 3;
 CREATE_CONTRACT
 { parameter
-    (pair (pair (nat %amount) (address %invst_token_address)) (address %receiver_address)) ;
+    (or (unit %def)
+        (pair %withdrawFa12
+           (pair (nat %amount) (address %invst_token_address))
+           (address %receiver_address))) ;
   storage
     (pair (pair (pair %nft_address address nat)
                 (map %token_balances_fa12
@@ -178,33 +191,35 @@ CREATE_CONTRACT
                    (pair (pair (nat %balance) (nat %decimals)) (address %invst_token_address))))
           (address %wallet_manager)) ;
   code { UNPAIR ;
-         DUP 2 ;
-         CDR ;
-         SENDER ;
-         COMPARE ;
-         NEQ ;
-         IF { DROP 2 ; PUSH string "ONLY_WALLET_MANAGER_ALLOWED" ; FAILWITH }
-            { DUP ;
-              CAR ;
-              CDR ;
-              CONTRACT %transfer (pair (address %from) (address %to) (nat %value)) ;
-              IF_NONE { PUSH string "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND" ; FAILWITH } {} ;
-              DUP 2 ;
-              CAR ;
-              CAR ;
-              SELF_ADDRESS ;
-              DIG 3 ;
-              CDR ;
-              PAIR 3 ;
-              SWAP ;
-              PUSH mutez 0 ;
-              DIG 2 ;
-              TRANSFER_TOKENS ;
-              SWAP ;
-              NIL operation ;
-              DIG 2 ;
-              CONS ;
-              PAIR } } };
+         IF_LEFT
+           { DROP ; NIL operation ; PAIR }
+           { DUP 2 ;
+             CDR ;
+             SENDER ;
+             COMPARE ;
+             NEQ ;
+             IF { DROP 2 ; PUSH string "ONLY_WALLET_MANAGER_ALLOWED" ; FAILWITH }
+                { DUP ;
+                  CAR ;
+                  CDR ;
+                  CONTRACT %transfer (pair (address %from) (address %to) (nat %value)) ;
+                  IF_NONE { PUSH string "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND" ; FAILWITH } {} ;
+                  DUP 2 ;
+                  CAR ;
+                  CAR ;
+                  DIG 2 ;
+                  CDR ;
+                  SELF_ADDRESS ;
+                  PAIR 3 ;
+                  SWAP ;
+                  PUSH mutez 0 ;
+                  DIG 2 ;
+                  TRANSFER_TOKENS ;
+                  SWAP ;
+                  NIL operation ;
+                  DIG 2 ;
+                  CONS ;
+                  PAIR } } } };
 PAIR
     }|} : create_wallet_contract -> create_smart_wallet_result)]
 

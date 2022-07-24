@@ -1,7 +1,13 @@
 { parameter
     (or (or (pair %balanceOfQuery
-               (list %requests (pair (address %owner) (nat %token_id)))
-               (address %token_address))
+               (pair (list %requests (pair (address %owner) (nat %token_id)))
+                     (address %token_address))
+               (pair %withdraw_fa12
+                  (pair (pair (nat %amount) (address %invst_token_address))
+                        (address %receiver_address)
+                        (address %token_address))
+                  (nat %token_id)
+                  (address %withdrawer)))
             (list %balanceOfResponse
                (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))))
         (or (pair %createAndCallSmartWallet
@@ -26,8 +32,15 @@
                (nat %token_id)
                (address %withdrawer)))) ;
   storage
-    (pair (nat %latest_owner_balance)
-          (big_map %owner_wallet_map (pair address nat) address)) ;
+    (pair (pair (big_map %owner_wallet_map (pair address nat) address)
+                (big_map %recent_balance_requests (pair address nat) address))
+          (big_map %withdraw_requests
+             (pair address nat)
+             (pair (pair (pair (nat %amount) (address %invst_token_address))
+                         (address %receiver_address)
+                         (address %token_address))
+                   (nat %token_id)
+                   (address %withdrawer)))) ;
   code { UNPAIR ;
          IF_LEFT
            { IF_LEFT
@@ -36,25 +49,101 @@
                    (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))) ;
                  IF_NONE { PUSH string "NO_RESPONSE_ENTRYPOINT" ; FAILWITH } {} ;
                  DUP 2 ;
+                 CAR ;
                  CDR ;
                  CONTRACT %balance_of
                    (pair (list %requests (pair (address %owner) (nat %token_id)))
                          (contract %callback
                             (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))))) ;
                  IF_NONE
-                   { DROP 2 ; PUSH string "NO_BALANCE_OF_ENTRYPOINT" ; FAILWITH }
-                   { PUSH mutez 0 ; DIG 2 ; DIG 3 ; CAR ; PAIR ; TRANSFER_TOKENS } ;
-                 SWAP ;
+                   { DROP ; PUSH string "NO_BALANCE_OF_ENTRYPOINT" ; FAILWITH }
+                   { PUSH mutez 0 ; DIG 2 ; DUP 4 ; CAR ; CAR ; PAIR ; TRANSFER_TOKENS } ;
+                 DUP 3 ;
+                 CDR ;
+                 DUP 3 ;
+                 CDR ;
+                 SOME ;
+                 DUP 4 ;
+                 CDR ;
+                 CDR ;
+                 CAR ;
+                 DUP 5 ;
+                 CDR ;
+                 CDR ;
+                 CDR ;
+                 PAIR ;
+                 UPDATE ;
+                 DUP 4 ;
+                 CAR ;
+                 CDR ;
+                 DUP 4 ;
+                 CAR ;
+                 CDR ;
+                 SOME ;
+                 DUP 5 ;
+                 CDR ;
+                 CDR ;
+                 CAR ;
+                 DIG 5 ;
+                 CDR ;
+                 CDR ;
+                 CDR ;
+                 PAIR ;
+                 UPDATE ;
+                 DIG 3 ;
+                 CAR ;
+                 CAR ;
+                 PAIR ;
+                 PAIR ;
                  NIL operation ;
                  DIG 2 ;
-                 CONS }
-               { IF_CONS { SWAP ; DROP ; CDR } { PUSH string "INVALID_BAL" ; FAILWITH } ;
-                 SWAP ;
+                 CONS ;
+                 PAIR }
+               { IF_CONS { SWAP ; DROP } { PUSH string "INVALID_BAL" ; FAILWITH } ;
+                 PUSH nat 0 ;
+                 DUP 2 ;
                  CDR ;
-                 SWAP ;
-                 PAIR ;
-                 NIL operation } ;
-             PAIR }
+                 COMPARE ;
+                 EQ ;
+                 IF { DROP 2 ; PUSH string "ONLY_OWNER_CAN_TRANSFER" ; FAILWITH }
+                    { DUP 2 ;
+                      CAR ;
+                      CDR ;
+                      DUP 2 ;
+                      CAR ;
+                      CDR ;
+                      DUP 3 ;
+                      CAR ;
+                      CAR ;
+                      PAIR ;
+                      GET ;
+                      IF_NONE { PUSH string "NO_BALANCE_REQ_FOUND" ; FAILWITH } {} ;
+                      SENDER ;
+                      COMPARE ;
+                      NEQ ;
+                      IF { DROP 2 ; PUSH string "INCORRECT_TOKEN" ; FAILWITH }
+                         { DUP 2 ;
+                           CDR ;
+                           DUP 2 ;
+                           CAR ;
+                           CDR ;
+                           DIG 2 ;
+                           CAR ;
+                           CAR ;
+                           PAIR ;
+                           GET ;
+                           IF_NONE { PUSH string "NO_WITHDRAW_REQ_FOUND" ; FAILWITH } {} ;
+                           SELF %withdrawFa12 ;
+                           PUSH mutez 0 ;
+                           DIG 2 ;
+                           PAIR 3 ;
+                           UNPAIR 3 ;
+                           TRANSFER_TOKENS ;
+                           SWAP ;
+                           NIL operation ;
+                           DIG 2 ;
+                           CONS ;
+                           PAIR } } } }
            { IF_LEFT
                { DUP ;
                  CAR ;
@@ -62,7 +151,10 @@
                  UNPAIR 3 ;
                  CREATE_CONTRACT
                    { parameter
-                       (pair (pair (nat %amount) (address %invst_token_address)) (address %receiver_address)) ;
+                       (or (unit %def)
+                           (pair %withdrawFa12
+                              (pair (nat %amount) (address %invst_token_address))
+                              (address %receiver_address))) ;
                      storage
                        (pair (pair (pair %nft_address address nat)
                                    (map %token_balances_fa12
@@ -70,33 +162,35 @@
                                       (pair (pair (nat %balance) (nat %decimals)) (address %invst_token_address))))
                              (address %wallet_manager)) ;
                      code { UNPAIR ;
-                            DUP 2 ;
-                            CDR ;
-                            SENDER ;
-                            COMPARE ;
-                            NEQ ;
-                            IF { DROP 2 ; PUSH string "ONLY_WALLET_MANAGER_ALLOWED" ; FAILWITH }
-                               { DUP ;
-                                 CAR ;
-                                 CDR ;
-                                 CONTRACT %transfer (pair (address %from) (address %to) (nat %value)) ;
-                                 IF_NONE { PUSH string "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND" ; FAILWITH } {} ;
-                                 DUP 2 ;
-                                 CAR ;
-                                 CAR ;
-                                 SELF_ADDRESS ;
-                                 DIG 3 ;
-                                 CDR ;
-                                 PAIR 3 ;
-                                 SWAP ;
-                                 PUSH mutez 0 ;
-                                 DIG 2 ;
-                                 TRANSFER_TOKENS ;
-                                 SWAP ;
-                                 NIL operation ;
-                                 DIG 2 ;
-                                 CONS ;
-                                 PAIR } } } ;
+                            IF_LEFT
+                              { DROP ; NIL operation ; PAIR }
+                              { DUP 2 ;
+                                CDR ;
+                                SENDER ;
+                                COMPARE ;
+                                NEQ ;
+                                IF { DROP 2 ; PUSH string "ONLY_WALLET_MANAGER_ALLOWED" ; FAILWITH }
+                                   { DUP ;
+                                     CAR ;
+                                     CDR ;
+                                     CONTRACT %transfer (pair (address %from) (address %to) (nat %value)) ;
+                                     IF_NONE { PUSH string "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND" ; FAILWITH } {} ;
+                                     DUP 2 ;
+                                     CAR ;
+                                     CAR ;
+                                     DIG 2 ;
+                                     CDR ;
+                                     SELF_ADDRESS ;
+                                     PAIR 3 ;
+                                     SWAP ;
+                                     PUSH mutez 0 ;
+                                     DIG 2 ;
+                                     TRANSFER_TOKENS ;
+                                     SWAP ;
+                                     NIL operation ;
+                                     DIG 2 ;
+                                     CONS ;
+                                     PAIR } } } } ;
                  PAIR ;
                  DUP 2 ;
                  CDR ;
@@ -115,19 +209,24 @@
                  TRANSFER_TOKENS ;
                  DUP 4 ;
                  CDR ;
-                 DUP 3 ;
+                 DUP 5 ;
+                 CAR ;
                  CDR ;
-                 SOME ;
+                 DIG 5 ;
+                 CAR ;
+                 CAR ;
                  DUP 5 ;
                  CDR ;
+                 SOME ;
+                 DUP 7 ;
+                 CDR ;
                  CAR ;
-                 DIG 5 ;
+                 DIG 7 ;
                  CAR ;
                  CDR ;
                  PAIR ;
                  UPDATE ;
-                 DIG 3 ;
-                 CAR ;
+                 PAIR ;
                  PAIR ;
                  NIL operation ;
                  DIG 2 ;
@@ -136,14 +235,14 @@
                  CAR ;
                  CONS ;
                  PAIR }
-               { DUP 2 ;
-                 CAR ;
-                 PUSH nat 1 ;
+               { SELF_ADDRESS ;
+                 SENDER ;
                  COMPARE ;
                  NEQ ;
-                 IF { DROP 2 ; PUSH string "ONLY_OWNER_CAN_WITHDRAW" ; FAILWITH }
+                 IF { DROP 2 ; PUSH string "ONLY_SELF_ALLOWED" ; FAILWITH }
                     { DUP 2 ;
-                      CDR ;
+                      CAR ;
+                      CAR ;
                       DUP 2 ;
                       CDR ;
                       CAR ;
@@ -180,5 +279,5 @@
   view "get_wallet_address"
        (pair (address %token_address) (nat %token_id))
        (option address)
-       { UNPAIR ; SWAP ; CDR ; SWAP ; GET } }
+       { UNPAIR ; SWAP ; CAR ; CAR ; SWAP ; GET } }
 
