@@ -37,7 +37,7 @@ type withdraw_tez_param = {
 }
 *)
 
-type parameter = WithdrawFa12 of withdraw_fa12_param
+type parameter = WithdrawFa12 of withdraw_fa12_param | Def of unit
 
 let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return = 
   if Tezos.get_sender() <> s.wallet_manager then (failwith "ONLY_WALLET_MANAGER_ALLOWED")
@@ -46,12 +46,14 @@ let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return =
     | None -> (failwith "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND")
     | Some ctr -> ctr in
     let transfer_param : transfer_param_fa12 = {
-      from = p.receiver_address;
-      to = Tezos.get_self_address();
+      from = Tezos.get_self_address();
+      to = p.receiver_address;
       value = p.amount; 
     } in
     let transfer_txn : operation = Tezos.transaction transfer_param 0tez invst_tkn_contract in
     let new_wallet_map = s in (* TODO *)
     ([transfer_txn], new_wallet_map)
 
-let main (param, storage : withdraw_fa12_param * storage) : return = withdraw_fa12 (param, storage)
+let main (param, storage : parameter * storage) : return = match param with
+  | WithdrawFa12 p -> withdraw_fa12 (p, storage)
+  | Def _ -> ([], storage) 

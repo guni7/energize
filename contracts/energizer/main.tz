@@ -194,48 +194,40 @@
              CAR ;
              GET ;
              IF_NONE { PUSH string "WALLET_MANAGER_NOT_FOUND" ; FAILWITH } {} ;
-             DUP ;
-             CONTRACT %withdrawFa12
-               (pair (pair (pair (nat %amount) (address %invst_token_address))
-                           (address %receiver_address)
-                           (address %token_address))
-                     (nat %token_id)
-                     (address %withdrawer)) ;
-             IF_NONE
-               { PUSH string "WALLET_MANAGER_WITHDRAW_ENTRYPOINT_NOT_FOUND" ; FAILWITH }
-               {} ;
              SENDER ;
+             DUP 3 ;
+             CDR ;
+             CDR ;
+             PAIR ;
+             DUP 3 ;
+             CDR ;
+             CAR ;
              DUP 4 ;
+             CAR ;
              CDR ;
              CDR ;
              PAIR ;
              DUP 4 ;
-             CDR ;
              CAR ;
+             CAR ;
+             CDR ;
              DUP 5 ;
              CAR ;
-             CDR ;
-             CDR ;
-             PAIR ;
-             DUP 5 ;
-             CAR ;
-             CAR ;
-             CDR ;
-             DUP 6 ;
-             CAR ;
              CAR ;
              CAR ;
              PAIR ;
              PAIR ;
              PAIR ;
-             SWAP ;
-             PUSH mutez 0 ;
-             DIG 2 ;
-             TRANSFER_TOKENS ;
              SWAP ;
              CONTRACT %balanceOfQuery
-               (pair (list %requests (pair (address %owner) (nat %token_id)))
-                     (address %token_address)) ;
+               (pair (pair (list %requests (pair (address %owner) (nat %token_id)))
+                           (address %token_address))
+                     (pair %withdraw_fa12
+                        (pair (pair (nat %amount) (address %invst_token_address))
+                              (address %receiver_address)
+                              (address %token_address))
+                        (nat %token_id)
+                        (address %withdrawer))) ;
              IF_NONE
                { PUSH string "WALLET_MANAGER_BALANCE_OF_ENTRYPOINT_NOT_FOUND" ; FAILWITH }
                {} ;
@@ -248,16 +240,16 @@
              CONS ;
              SWAP ;
              PUSH mutez 0 ;
+             DIG 3 ;
              DIG 4 ;
              CDR ;
              CAR ;
-             DIG 3 ;
+             DIG 4 ;
+             PAIR ;
              PAIR ;
              TRANSFER_TOKENS ;
-             DIG 2 ;
+             SWAP ;
              NIL operation ;
-             DIG 3 ;
-             CONS ;
              DIG 2 ;
              CONS ;
              PAIR } } }
