@@ -19,6 +19,7 @@ type invst_token_details = {
   token_address : invst_token_address;
   token_type : token_type;
   decimals : nat;
+  is_interest_bearing : bool;
 }
 
 type get_balance = address * (nat contract)
@@ -46,9 +47,8 @@ type energize_param = {
 type energize_with_interest_param = {
   token_address : asset_address ;
   token_id : token_id;
-  invst_token_id : invst_token_id;
-  amount : nat ;
 }
+
 type get_wallet_address_param = {
   token_address: asset_address;
   token_id : token_id
@@ -180,7 +180,7 @@ let energize (p, s : energize_param * storage) : return =
         Tezos.transaction create_and_call_smart_wallet_param 0tez create_and_call_contract_entrypoint in
       (*transfer to wallet manager *)
       let mgr_transfer_param : transfer_param_fa12 = {
-        from = Tezos.get_sender();
+        from = Tezos.get_sender()
         to = (wallet_manager : address);
         value = p.amount; 
       } in
@@ -193,9 +193,11 @@ let energize (p, s : energize_param * storage) : return =
           value = p.amount; 
         } in
         let transfer_to_wallet_txn : operation = Tezos.transaction wallet_transfer_param 0tez invst_tkn_contract in
-        ([transfer_to_self_txn; transfer_to_wallet_txn],s)
+        ([transfer_to_wallet_txn],s)
     in return
 
+let energize_with_interest (p, s : energize_with_interest_param * storage) : return = 
+  ([],s)
 
 let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return = 
   (*send withdraw request to wallet manager*)
@@ -238,3 +240,6 @@ let main (param, storage : parameter * storage) : return =
   | Energize p -> energize (p, storage)
   | WithdrawFa12 p -> withdraw_fa12 (p, storage)
   | AddWalletManager p -> add_wallet_manager (p, storage)
+
+
+

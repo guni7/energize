@@ -1,17 +1,78 @@
 { parameter
-    (or (unit %def)
+    (or (or (pair %investInterestBearingFa12
+               (pair (nat %amount) (address %invst_token_address))
+               (nat %yupana_token_id))
+            (pair %investInterestBearingFa12Step2
+               (pair (nat %amount) (address %invst_token_address))
+               (nat %yupana_token_id)))
         (pair %withdrawFa12
            (pair (nat %amount) (address %invst_token_address))
            (address %receiver_address))) ;
-  storage
-    (pair (pair (pair %nft_address address nat)
-                (map %token_balances_fa12
-                   address
-                   (pair (pair (nat %balance) (nat %decimals)) (address %invst_token_address))))
-          (address %wallet_manager)) ;
+  storage (pair (pair %nft_address address nat) (address %wallet_manager)) ;
   code { UNPAIR ;
          IF_LEFT
-           { DROP ; NIL operation ; PAIR }
+           { IF_LEFT
+               { DUP ;
+                 CAR ;
+                 CDR ;
+                 CONTRACT %approve (pair (address %spender) (nat %value)) ;
+                 IF_NONE { PUSH string "ALLOW_EP_NOT_FOUND" ; FAILWITH } {} ;
+                 PUSH mutez 0 ;
+                 DUP 3 ;
+                 CAR ;
+                 CAR ;
+                 PUSH address "KT1PW3aKxfB89HUrq8ywnw9tLvxtuHLgsjJW" ;
+                 PAIR ;
+                 TRANSFER_TOKENS ;
+                 PUSH address "KT1MZeSimmt1A3omsJXjKy9ihma1ajUPqD4m" ;
+                 CONTRACT %getPrice (set nat) ;
+                 IF_NONE { PUSH string "GET_PRICE_EP_NOT_FOUND" ; FAILWITH } {} ;
+                 PUSH mutez 0 ;
+                 EMPTY_SET nat ;
+                 DUP 5 ;
+                 CDR ;
+                 PUSH bool True ;
+                 SWAP ;
+                 UPDATE ;
+                 TRANSFER_TOKENS ;
+                 PUSH address "KT1PW3aKxfB89HUrq8ywnw9tLvxtuHLgsjJW" ;
+                 CONTRACT %updateInterest nat ;
+                 IF_NONE { PUSH string "UPDATE_INTEREST_EP_NOT_FOUND" ; FAILWITH } {} ;
+                 PUSH mutez 0 ;
+                 DUP 5 ;
+                 CDR ;
+                 TRANSFER_TOKENS ;
+                 SELF %investInterestBearingFa12Step2 ;
+                 PUSH mutez 0 ;
+                 DIG 5 ;
+                 PAIR 3 ;
+                 UNPAIR 3 ;
+                 TRANSFER_TOKENS ;
+                 DIG 4 ;
+                 NIL operation ;
+                 DIG 2 ;
+                 CONS ;
+                 DIG 2 ;
+                 CONS ;
+                 DIG 2 ;
+                 CONS }
+               { PUSH address "KT1PW3aKxfB89HUrq8ywnw9tLvxtuHLgsjJW" ;
+                 CONTRACT %mint (pair (nat %token_id) (nat %amount) (nat %min_received)) ;
+                 IF_NONE { PUSH string "MINT_EP_NOT_FOUND" ; FAILWITH } {} ;
+                 PUSH mutez 0 ;
+                 PUSH nat 1 ;
+                 DUP 4 ;
+                 CAR ;
+                 CAR ;
+                 DIG 4 ;
+                 CDR ;
+                 PAIR 3 ;
+                 TRANSFER_TOKENS ;
+                 SWAP ;
+                 NIL operation } ;
+             DIG 2 ;
+             CONS ;
+             PAIR }
            { DUP 2 ;
              CDR ;
              SENDER ;
@@ -22,7 +83,7 @@
                   CAR ;
                   CDR ;
                   CONTRACT %transfer (pair (address %from) (address %to) (nat %value)) ;
-                  IF_NONE { PUSH string "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND" ; FAILWITH } {} ;
+                  IF_NONE { PUSH string "TRANSFER_EP_NOT_FOUND" ; FAILWITH } {} ;
                   DUP 2 ;
                   CAR ;
                   CAR ;

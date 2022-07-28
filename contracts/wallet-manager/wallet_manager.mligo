@@ -98,7 +98,7 @@ type create_wallet_contract =
     value : nat;
   }
 
-  type create_and_call_smart_wallet_param = {
+  type create_and_transfer_smart_wallet_param = {
     create_contract : create_wallet_contract;
     transfer : transfer_details;
     token_address : token_address;
@@ -115,7 +115,7 @@ type create_wallet_contract =
     | WithdrawFa12 of withdraw_fa12_param
     | BalanceOfQuery of balance_of_query_param
     | BalanceOfResponse of balance_of_response list
-    | CreateAndCallSmartWallet of create_and_call_smart_wallet_param
+    | CreateAndTransferSmartWallet of create_and_transfer_smart_wallet_param
 
   [@view]
   let get_wallet_address (p, s : get_wallet_address_param * storage) : smart_wallet_address option = 
@@ -220,10 +220,10 @@ CREATE_CONTRACT
                   DIG 2 ;
                   CONS ;
                   PAIR } } } };
-PAIR
+      PAIR
     }|} : create_wallet_contract -> create_smart_wallet_result)]
 
-let create_and_call_smart_wallet (p,s : create_and_call_smart_wallet_param * storage) : return = 
+let create_and_transfer_smart_wallet (p,s : create_and_transfer_smart_wallet_param * storage) : return = 
   let res = create_smart_wallet p.create_contract in
   let transfer_param : transfer_param_fa12 = {
     from = Tezos.get_self_address();
@@ -238,5 +238,5 @@ let main (param, storage: parameter * storage) : return =
   match param with 
   | WithdrawFa12 p -> withdraw_fa12 (p, storage)
   | BalanceOfQuery p -> balance_of_query (p, storage)
-  | CreateAndCallSmartWallet p -> create_and_call_smart_wallet (p, storage)
+  | CreateAndTransferSmartWallet p -> create_and_transfer_smart_wallet (p, storage)
   | BalanceOfResponse p -> balance_of_response (p, storage)
