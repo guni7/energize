@@ -13,7 +13,6 @@ type token_details = {
 type storage = {
   wallet_manager : wallet_manager_address;
   nft_address : token_address * token_id;
-  token_balances_fa12 : (invst_token_address, token_details) map;
 }
 
 type return = operation list * storage
@@ -56,4 +55,5 @@ let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return =
 
 let main (param, storage : parameter * storage) : return = match param with
   | WithdrawFa12 p -> withdraw_fa12 (p, storage)
+  (* | DepositInterestBearingFa12 p -> deposit_interest_bearing_fa12 (p, storage) *)
   | Def _ -> ([], storage) 
