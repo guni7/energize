@@ -1,245 +1,411 @@
-(* structs-
-  wallet manager 
-  invst token
-  nft token
+module Yupana = struct 
+  type token_id = nat
+end
 
- *)
+module InvestmentToken = struct 
+  type token_id = nat 
+  type token_address = address
+  type token_type = string (* TODO *)
 
-type asset_address = address
-type wallet_manager_address = address
-type smart_wallet_address = address
-type invst_token_address = address
+  type token_details = {
+    token_address : token_address;
+    token_type : token_type;
+    decimals : nat;
+    yupana_token_id : Yupana.token_id option; 
+  }
 
-type invst_token_id = nat
-type token_id = nat 
+  type t = (token_id, token_details) big_map
+end
 
-type token_type = string
+module NftToken = struct 
+  type token_id = nat 
+  type token_address = address
+end
 
-type invst_token_details = {
-  token_address : invst_token_address;
-  token_type : token_type;
-  decimals : nat;
-  is_interest_bearing : bool;
-}
+module SmartWallet = struct 
+  type wm_address = address 
+  type storage = {
+    wallet_manager : wm_address;
+    nft_address : NftToken.token_address * NftToken.token_id;
+  }
+  type create_param = [@layout:comb]{ 
+    delegate : key_hash option;
+    balance : tez;
+    storage : storage 
+  }
+  type invest_interest_bearing_fa12 = {
+    yupana_token_id: nat;
+    invst_token_address : address;
+    amount : nat;
+  }
 
-type get_balance = address * (nat contract)
+  let get_invest_ep (sw_addr : address) : invest_interest_bearing_fa12 contract = 
+    match (Tezos.get_entrypoint_opt ("%investInterestBearingFa12") sw_addr : invest_interest_bearing_fa12 contract option) with
+    | None -> (failwith "INVEST_EP_NOT_FOUND")
+    | Some ep -> ep
+end
 
-type storage = {
-  wallet_manager_map : (invst_token_id, wallet_manager_address) big_map; 
-  tokens : (invst_token_id, invst_token_details) big_map;
-  admin : address;
-}
+module FA12Token = struct 
+  type transfer = [@layout:comb] {
+    from: address;
+    to : address;
+    value: nat
+  }
 
-type transfer_param_fa12 = [@layout:comb] {
-  from: address;
-  to : address;
-  value: nat
+  let get_transfer_ep (addr : InvestmentToken.token_address) : transfer contract = 
+    match (Tezos.get_entrypoint_opt ("%transfer") (addr : address) : transfer contract option) with
+    | None -> (failwith "TRANSFER_EP_NOT_FOUND")
+    | Some ep -> ep
+end
+
+module WalletManager = struct 
+  type wm_address = address
+
+  type smart_wallet_key = {
+    nft_address : NftToken.token_address;
+    nft_id : NftToken.token_id;
+  }
+  type transfer_details = {
+    invst_tkn_transfer_ep : FA12Token.transfer contract;
+    value : nat;
+  }
+ 
+  type create_and_transfer_smart_wallet = {
+    create_contract : SmartWallet.create_param;
+    transfer : transfer_details;
+    nft_address : NftToken.token_address;
+    nft_id : NftToken.token_id;
+  }
+
+  type create_and_invest_smart_wallet = {
+    create_contract : SmartWallet.create_param;
+    transfer : transfer_details;
+    yupana_token_id : nat;
+    invst_token_address : InvestmentToken.token_address;
+    nft_address : NftToken.token_address;
+    nft_id : NftToken.token_id;
+  }
+
+  type withdraw_fa12 = {
+    nft_address : NftToken.token_address;
+    nft_id : NftToken.token_id;
+    invst_token_address : InvestmentToken.token_address;
+    receiver_address : address;
+    withdrawer : address;
+    amount : nat;
+  }
+  
+  type withdraw_interest_bearing_fa12 = {
+    nft_address : NftToken.token_address;
+    nft_id : NftToken.token_id;
+    invst_token_address : InvestmentToken.token_address;
+    yupana_token_id : nat;
+    receiver_address : address;
+    withdrawer : address;
+    amount : nat;
+  
+  }
+  type balance_of_request = [@layout:comb]{
+    owner : address;
+    token_id : nat;
+  }
+  type balance_of_query = {
+    requests : balance_of_request list;
+    nft_address : address;
+    withdraw_fa12 : withdraw_fa12;
+  } 
+
+  type balance_of_query_yup = {
+    requests : balance_of_request list;
+    nft_address : address;
+    withdraw_interest_bearing_fa12 : withdraw_interest_bearing_fa12;
+  }
+
+  let get_smart_wallet_addr (k, wm_addr: smart_wallet_key * wm_address) : address option = 
+    Tezos.call_view "get_wallet_address" k (wm_addr: address) 
+
+  let get_create_and_transfer_wallet_ep  (wm_addr : wm_address ) : create_and_transfer_smart_wallet contract = 
+    match (Tezos.get_entrypoint_opt ("%createAndTransferSmartWallet") wm_addr: create_and_transfer_smart_wallet contract option) with 
+      | None -> (failwith "CREATE_SMART_WALLET_EP_NOT_FOUND" : create_and_transfer_smart_wallet contract)
+      | Some ep -> ep
+
+  let get_create_and_invest_wallet_ep (wm_addr : wm_address) : create_and_invest_smart_wallet contract =
+    match (Tezos.get_entrypoint_opt ("%createAndInvestSmartWallet") wm_addr : create_and_invest_smart_wallet contract option) with
+     | None -> (failwith "CREATE_SMART_WALLET_EP_NOT_FOUND")
+     | Some ep -> ep
+
+  let get_bal_of_ep (wm_addr : wm_address): balance_of_query contract =
+    match (Tezos.get_entrypoint_opt "%balanceOfQuery" wm_addr : balance_of_query contract option) with 
+    | None -> (failwith "WM_BALANCE_OF_ENTRYPOINT_NOT_FOUND" : balance_of_query contract)
+    | Some ctr -> ctr 
+  
+  let get_bal_of_yup_ep (wm_addr : wm_address) : balance_of_query_yup contract = 
+    match (Tezos.get_entrypoint_opt "%balanceOfQueryYup" wm_addr : balance_of_query_yup contract option) with 
+    | None -> (failwith "WM_BALANCE_OF_YUP_ENTRYPOINT_NOT_FOUND" : balance_of_query_yup contract)
+    | Some ctr -> ctr 
+
+end
+
+module Storage = struct 
+  type t = {
+    wm_map : (InvestmentToken.token_id, WalletManager.wm_address) big_map; 
+    invst_tokens : (InvestmentToken.token_id, InvestmentToken.token_details) big_map;
+    admin : address;
+  }
+end
+
+type add_wallet_manager_param = {
+  token_id : InvestmentToken.token_id;
+  token_details : InvestmentToken.token_details;
+  wm_address: WalletManager.wm_address;
 }
 
 type energize_param = {
-  token_address : asset_address ;
-  token_id : token_id;
-  invst_token_id : invst_token_id;
-  invst_token_address : invst_token_address;
-  amount : nat ;
+  nft_address : NftToken.token_address ;
+  nft_id : NftToken.token_id;
+  token_id : InvestmentToken.token_id;
+  amount : nat;
 }
 
 type energize_with_interest_param = {
-  token_address : asset_address ;
-  token_id : token_id;
-}
-
-type get_wallet_address_param = {
-  token_address: asset_address;
-  token_id : token_id
-}
-type balance_of_request = [@layout:comb]{
-  owner : address;
-  token_id : nat;
-}
-  
-type withdraw_fa12_param = {
-  token_address : asset_address;
-  token_id : token_id;
-  receiver_address : address;
-  invst_token_address : invst_token_address;
-  invst_token_id : invst_token_id; (* remove this  *)
+  nft_address : NftToken.token_address;
+  nft_id : NftToken.token_id;
+  token_id : InvestmentToken.token_id;
   amount : nat;
 }
-type withdraw_fa12_mgr_param = {
-  token_address : asset_address;
-  token_id : token_id;
+
+type withdraw_param = {
+  nft_address : NftToken.token_address;
+  nft_id : NftToken.token_id;
+  invst_token_id : InvestmentToken.token_id; 
   receiver_address : address;
-  invst_token_address : invst_token_address;
   amount : nat;
-  withdrawer : address;
-}
-type balance_of_query_param = {
-  requests : balance_of_request list;
-  token_address : address;
-  withdraw_fa12 : withdraw_fa12_mgr_param;
 }
 
-
-type token_details = {
-  invst_token_address : address;
-  balance : nat;
-  decimals : nat;
-}
-type smart_wallet_contract_storage = {
-  wallet_manager : wallet_manager_address;
-  nft_address : asset_address * token_id;
-  token_balances_fa12 : (invst_token_address, token_details) map;
-}
-
-type create_wallet_contract = 
-  [@layout:comb]
-  (* order matters because we will cross the Michelson boundary *)
-  { delegate : key_hash option;
-    balance : tez;
-    storage : smart_wallet_contract_storage
-  }
-
-type transfer_details = {
-  invst_tkn_contract : transfer_param_fa12 contract;
-  value : nat;
-}
-
-type create_and_call_smart_wallet_param = {
-  create_contract : create_wallet_contract;
-  transfer : transfer_details;
-  token_address : asset_address;
-  token_id : token_id;
-}
-
-type add_wallet_manager_param = {
-  invst_token_id : invst_token_id;
-  invst_token_details : invst_token_details;
-  wallet_manager : wallet_manager_address;
-}
 type parameter = 
-  Energize of energize_param
-  | WithdrawFa12 of withdraw_fa12_param
+  | Energize of energize_param
+  | EnergizeWithInterest of energize_with_interest_param
+  | WithdrawFa12 of withdraw_param
   | AddWalletManager of add_wallet_manager_param
-type return = operation list * storage
 
+type return = (operation list * Storage.t)
 
-let energize (p, s : energize_param * storage) : return = 
-  (* validation here*)
-  let wallet_manager : wallet_manager_address = match (Big_map.find_opt p.invst_token_id s.wallet_manager_map) with
-    | None -> (failwith "WALLET_MANAGER_NOT_FOUND" : wallet_manager_address) 
+let add_wallet_manager (p, s : add_wallet_manager_param * Storage.t) : return =
+  let () = assert_with_error (Tezos.get_sender() = s.admin) ("ONLY_ADMIN_ALLOWED") in
+  let new_invst_tokens = Big_map.update p.token_id (Some p.token_details) s.invst_tokens in
+  let new_wm_map = Big_map.update p.token_id (Some p.wm_address) s.wm_map in
+  ([], {s with wm_map = new_wm_map; invst_tokens = new_invst_tokens;})
+
+let energize (p,s : energize_param * Storage.t) : return = 
+  let wm_addr_opt = Big_map.find_opt p.token_id s.wm_map in
+  let wm_addr = match wm_addr_opt with 
+    | None -> (failwith "WM_NOT_FOUND") 
     | Some addr -> addr in
-
-  (*collect $$$*)
-  let invst_tkn_deets : invst_token_details = match (Big_map.find_opt p.invst_token_id s.tokens) with 
-  | None -> (failwith "INVESTMENT_TOKEN_NOT_FOUND" : invst_token_details)
-  | Some d -> d in
-  let invst_tkn_contract : transfer_param_fa12 contract = match (Tezos.get_entrypoint_opt ("%transfer") (invst_tkn_deets.token_address) : transfer_param_fa12 contract option) with
-  | None -> (failwith "INVESTMENT_TOKEN_CONTRACT_NOT_FOUND" :transfer_param_fa12 contract )
-  | Some ctr -> ctr in
-  let self_transfer_param : transfer_param_fa12 = {
+  let invst_tkn_details_opt = Big_map.find_opt p.token_id s.invst_tokens in
+  let invst_token_details = match invst_tkn_details_opt with 
+    | None -> (failwith "INVST_TOKEN_NOT_FOUND") 
+    | Some dts -> dts in 
+  let invst_tkn_transfer_ep = FA12Token.get_transfer_ep invst_token_details.token_address in
+  let transfer_self_param : FA12Token.transfer = {
     from = Tezos.get_sender();
     to = Tezos.get_self_address();
-    value = p.amount; (* add fees here*)
+    value = p.amount; (* TODO add fees here*)
   } in
-  let transfer_to_self_txn : operation = Tezos.transaction self_transfer_param 0tez invst_tkn_contract in
-
-  (*transfer funds to smart wallet *)
-  (* get wallet id *) 
-  let wallet_key : get_wallet_address_param = {
-    token_address = p.token_address; 
-    token_id = p.token_id;
-  } in
-  let return : return = match (Tezos.call_view "get_wallet_address" wallet_key wallet_manager : address option) with
+  let _transfer_to_self_txn : operation = (* TODO will be useful for fees *)
+    Tezos.transaction transfer_self_param 0tez invst_tkn_transfer_ep in
+  let smart_wallet_addr_key : WalletManager.smart_wallet_key = {
+    nft_address = p.nft_address; 
+    nft_id = p.nft_id;
+  } in 
+  let smart_wallet_addr_opt = WalletManager.get_smart_wallet_addr (smart_wallet_addr_key, wm_addr) in 
+  let return : return = match smart_wallet_addr_opt with 
     | None -> 
-      let smart_wallet_init_storage : smart_wallet_contract_storage = {
-        wallet_manager = wallet_manager;
-        nft_address = (p.token_address, p.token_id);
-        token_balances_fa12 = (Map.empty: (invst_token_address, token_details) map);
-      } in
-      let create_wallet_contract : create_wallet_contract = {
+      let transfer_to_mgr_param : FA12Token.transfer = {
+        from = Tezos.get_sender();
+        to = (wm_addr: address);
+        value = p.amount; 
+      } in 
+      let transfer_to_mgr_tr : operation = 
+        Tezos.transaction transfer_to_mgr_param 0tez invst_tkn_transfer_ep in 
+      let init_storage : SmartWallet.storage = {
+        wallet_manager = wm_addr;
+        nft_address = (p.nft_address, p.nft_id);
+      } in 
+      let create_wallet_param : SmartWallet.create_param = {
         delegate = (None : key_hash option) ;
         balance = 0tez;
-        storage = smart_wallet_init_storage; 
+        storage = init_storage; 
       } in 
-      let transfer_details : transfer_details = {
-        invst_tkn_contract = invst_tkn_contract ;
+      let transfer_details : WalletManager.transfer_details = {
+        invst_tkn_transfer_ep = invst_tkn_transfer_ep;
         value = p.amount;
       } in
-      let create_and_call_smart_wallet_param : create_and_call_smart_wallet_param = {
-        create_contract = create_wallet_contract;
+      let create_and_transfer_smart_wallet_param : WalletManager.create_and_transfer_smart_wallet = {
+        create_contract = create_wallet_param;
         transfer = transfer_details;
-        token_address = p.token_address ;
-        token_id = p.token_id;
+        nft_address = p.nft_address ;
+        nft_id = p.nft_id;
       } in
-      let create_and_call_contract_entrypoint : create_and_call_smart_wallet_param contract = 
-        match (Tezos.get_entrypoint_opt ("%createAndCallSmartWallet") wallet_manager: create_and_call_smart_wallet_param contract option) with 
-        | None -> (failwith "CREATE_SMART_WALLET_ENTRYPOINT_NOT_FOUND" : create_and_call_smart_wallet_param contract)
-        | Some ep -> ep in
+      let create_and_transfer_contract_ep = WalletManager.get_create_and_transfer_wallet_ep wm_addr in
       let create_wallet_and_call_tr : operation = 
-        Tezos.transaction create_and_call_smart_wallet_param 0tez create_and_call_contract_entrypoint in
-      (*transfer to wallet manager *)
-      let mgr_transfer_param : transfer_param_fa12 = {
-        from = Tezos.get_sender()
-        to = (wallet_manager : address);
-        value = p.amount; 
-      } in
-      let transfer_to_mgr_tr : operation = Tezos.transaction mgr_transfer_param 0tez invst_tkn_contract in
+        Tezos.transaction create_and_transfer_smart_wallet_param 0tez create_and_transfer_contract_ep in
       ([transfer_to_mgr_tr; create_wallet_and_call_tr], s) 
     | Some addr -> 
-        let wallet_transfer_param : transfer_param_fa12 = {
+        let transfer_to_wallet : FA12Token.transfer = {
           from = Tezos.get_sender();
           to = (addr: address);
           value = p.amount; 
         } in
-        let transfer_to_wallet_txn : operation = Tezos.transaction wallet_transfer_param 0tez invst_tkn_contract in
-        ([transfer_to_wallet_txn],s)
-    in return
+        let transfer_to_wallet_tx : operation = 
+          Tezos.transaction transfer_to_wallet 0tez invst_tkn_transfer_ep in
+        ([transfer_to_wallet_tx],s)
+  in return
 
-let energize_with_interest (p, s : energize_with_interest_param * storage) : return = 
-  ([],s)
-
-let withdraw_fa12 (p,s : withdraw_fa12_param * storage) : return = 
-  (*send withdraw request to wallet manager*)
-  let wallet_manager : wallet_manager_address = match (Big_map.find_opt p.invst_token_id s.wallet_manager_map) with
-    | None -> (failwith "WALLET_MANAGER_NOT_FOUND" : wallet_manager_address) 
+let withdraw (p,s : withdraw_param * Storage.t) : return =
+  let wm_addr_opt = Big_map.find_opt p.invst_token_id s.wm_map in
+  let wm_addr = match wm_addr_opt with 
+    | None -> (failwith "WM_NOT_FOUND") 
     | Some addr -> addr in
-  let withdraw_fa12_mgr_param : withdraw_fa12_mgr_param = {
-    token_address = p.token_address;
-    token_id = p.token_id;
+  let invst_tkn_details_opt = Big_map.find_opt p.invst_token_id s.invst_tokens in
+  let invst_tkn_details = match invst_tkn_details_opt with
+    | None -> (failwith "WM_NOT_FOUND")
+    | Some dts -> dts in
+  let withdraw_fa12_param : WalletManager.withdraw_fa12 = {
+    nft_address = p.nft_address;
+    nft_id = p.nft_id;
+    invst_token_address = invst_tkn_details.token_address;
     receiver_address = p.receiver_address;
-    invst_token_address = p.invst_token_address;
-    amount = p.amount;
     withdrawer = Tezos.get_sender();
+    amount = p.amount;
   } in 
-  let bal_of_ep : balance_of_query_param contract = match (Tezos.get_entrypoint_opt "%balanceOfQuery" wallet_manager : balance_of_query_param contract option) with 
-    | None -> (failwith "WALLET_MANAGER_BALANCE_OF_ENTRYPOINT_NOT_FOUND" : balance_of_query_param contract)
-    | Some ctr -> ctr in 
-  let balance_of_query_requests : balance_of_request list = [{
+  let balance_of_query_requests : WalletManager.balance_of_request list = [{
     owner = Tezos.get_sender();
-    token_id = (p.token_id : nat);
-  };] in 
-  let balance_of_query : balance_of_query_param = {
+    token_id = (p.nft_id : nat);
+  }] in  
+  let balance_of_query : WalletManager.balance_of_query = {
     requests = balance_of_query_requests;
-    token_address = (p.token_address : address) ;
-    withdraw_fa12 = withdraw_fa12_mgr_param;
+    nft_address = (p.nft_address : address) ;
+    withdraw_fa12 = withdraw_fa12_param;
   } in
+  let bal_of_ep = WalletManager.get_bal_of_ep wm_addr in
   let bal_of_tr : operation = Tezos.transaction balance_of_query 0tez bal_of_ep in 
   ([bal_of_tr], s)
 
+let withdraw_interest_bearing (p,s : withdraw_param * Storage.t) =
+  let wm_addr_opt = Big_map.find_opt p.invst_token_id s.wm_map in
+  let wm_addr = match wm_addr_opt with 
+    | None -> (failwith "WM_NOT_FOUND") 
+    | Some addr -> addr in
+  let invst_tkn_details_opt = Big_map.find_opt p.invst_token_id s.invst_tokens in
+  let invst_tkn_details = match invst_tkn_details_opt with
+    | None -> (failwith "WM_NOT_FOUND")
+    | Some dts -> dts in 
+  let yupana_token_id : Yupana.token_id = match invst_tkn_details.yupana_token_id with
+    | None -> (failwith "TOKEN_CANNOT_BE_ENERGIZED")
+    | Some id -> id in
+  let withdraw_fa12_param : WalletManager.withdraw_interest_bearing_fa12 = {
+    nft_address = p.nft_address;
+    nft_id = p.nft_id;
+    invst_token_address = invst_tkn_details.token_address;
+    receiver_address = p.receiver_address;
+    yupana_token_id = (yupana_token_id : nat);
+    withdrawer = Tezos.get_sender();
+    amount = p.amount;
+  } in 
+  let balance_of_query_requests : WalletManager.balance_of_request list = [{
+    owner = Tezos.get_sender();
+    token_id = (p.nft_id : nat);
+  }] in  
+  let balance_of_query : WalletManager.balance_of_query_yup = {
+    requests = balance_of_query_requests;
+    nft_address = (p.nft_address : address) ;
+    withdraw_interest_bearing_fa12 = withdraw_fa12_param;
+  } in 
+  let bal_of_yup_ep = WalletManager.get_bal_of_yup_ep wm_addr in
+  let bal_of_tr : operation = Tezos.transaction balance_of_query 0tez bal_of_yup_ep in 
+  ([bal_of_tr], s)
 
-let add_wallet_manager (p, s : add_wallet_manager_param * storage) : return = 
-  if Tezos.get_sender() <> s.admin then failwith "ONLY_ADMIN_ALLOWED" else
-  let new_tokens = Big_map.update (p.invst_token_id) (Some p.invst_token_details : invst_token_details option) s.tokens in
-  let new_wallet_mgr_map = Big_map.update (p.invst_token_id) (Some p.wallet_manager : wallet_manager_address option) s.wallet_manager_map in
-  ([], {s with tokens = new_tokens; wallet_manager_map = new_wallet_mgr_map})
+let energize_with_interest (p,s : energize_with_interest_param * Storage.t) = 
+  let wm_addr_opt = Big_map.find_opt p.token_id s.wm_map in
+  let wm_addr = match wm_addr_opt with 
+    | None -> (failwith "WM_NOT_FOUND") 
+    | Some addr -> addr in
+  let invst_tkn_details_opt = Big_map.find_opt p.token_id s.invst_tokens in
+  let invst_token_details = match invst_tkn_details_opt with 
+    | None -> (failwith "INVST_TOKEN_NOT_FOUND") 
+    | Some dts -> dts in 
+  let yupana_token_id : Yupana.token_id = match invst_token_details.yupana_token_id with
+    | None -> (failwith "TOKEN_CANNOT_BE_ENERGIZED")
+    | Some id -> id in
+  let invst_tkn_transfer_ep = FA12Token.get_transfer_ep invst_token_details.token_address in
+  let transfer_self_param : FA12Token.transfer = {
+    from = Tezos.get_sender();
+    to = Tezos.get_self_address();
+    value = p.amount; (* TODO add fees here*)
+  } in
+  let _transfer_to_self_txn : operation = (* TODO will be useful for fees *)
+    Tezos.transaction transfer_self_param 0tez invst_tkn_transfer_ep in
+  let smart_wallet_addr_key : WalletManager.smart_wallet_key = {
+    nft_address = p.nft_address; 
+    nft_id = p.nft_id;
+  } in 
+  let smart_wallet_addr_opt = WalletManager.get_smart_wallet_addr (smart_wallet_addr_key, wm_addr) in 
+  let return : return = match smart_wallet_addr_opt with 
+    | None -> 
+      let transfer_to_mgr_param : FA12Token.transfer = {
+        from = Tezos.get_sender();
+        to = (wm_addr: address);
+        value = p.amount; 
+      } in 
+      let transfer_to_mgr_tr : operation = 
+        Tezos.transaction transfer_to_mgr_param 0tez invst_tkn_transfer_ep in 
+      let init_storage : SmartWallet.storage = {
+        wallet_manager = wm_addr;
+        nft_address = (p.nft_address, p.nft_id);
+      } in 
+      let create_wallet_param : SmartWallet.create_param = {
+        delegate = (None : key_hash option) ;
+        balance = 0tez;
+        storage = init_storage; 
+      } in 
+      let transfer_details : WalletManager.transfer_details = {
+        invst_tkn_transfer_ep = invst_tkn_transfer_ep;
+        value = p.amount;
+      } in
+      let create_and_invest_smart_wallet_param : WalletManager.create_and_invest_smart_wallet = {
+        create_contract = create_wallet_param;
+        transfer = transfer_details;
+        yupana_token_id = yupana_token_id;
+        invst_token_address = invst_token_details.token_address; 
+        nft_address = p.nft_address;
+        nft_id = p.nft_id;
+      } in
+      let create_and_invest_contract_ep = WalletManager.get_create_and_invest_wallet_ep wm_addr in
+      let create_wallet_and_invest_tr : operation = 
+        Tezos.transaction create_and_invest_smart_wallet_param 0tez create_and_invest_contract_ep in
+      ([transfer_to_mgr_tr; create_wallet_and_invest_tr], s) 
+    | Some addr -> 
+        let transfer_to_wallet : FA12Token.transfer = {
+          from = Tezos.get_sender();
+          to = (addr: address);
+          value = p.amount; 
+        } in
+        let transfer_to_wallet_tx : operation = Tezos.transaction transfer_to_wallet 0tez invst_tkn_transfer_ep in
+        (* get inv ep from smart wallet *)
+        let invest_param: SmartWallet.invest_interest_bearing_fa12 = {
+          yupana_token_id = (yupana_token_id : nat);
+          invst_token_address = (invst_token_details.token_address: address);
+          amount = p.amount; 
+        } in
+        let invest_ep = SmartWallet.get_invest_ep addr in
+        let invest_tr = Tezos.transaction invest_param 0tez invest_ep in
+        ([transfer_to_wallet_tx; invest_tr],s)
+  in return
 
-
-let main (param, storage : parameter * storage) : return = 
+let main (param, storage : (parameter * Storage.t)) : return = 
   match param with
   | Energize p -> energize (p, storage)
-  | WithdrawFa12 p -> withdraw_fa12 (p, storage)
+  | EnergizeWithInterest p -> energize_with_interest (p, storage)
+  | WithdrawFa12 p -> withdraw (p, storage)
   | AddWalletManager p -> add_wallet_manager (p, storage)
-
-
 
