@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux";
 import { selectDescription, selectTitle } from "../../features/mintForm/selectors";
 import { setDescription, setTitle } from "../../features/mintForm/slice";
@@ -37,11 +36,11 @@ export const MintForm = () => {
 
 let buttonClass =
   " flex m-4 px-4 py-1 blur-xl w-38 self-end" +
-  " text-lg text-indigo-50 " +
-  " bg-gray-800  border-2  border-indigo-50 border-dotted"
+  " text-lg text-pink-400 " +
+  " bg-gray-800  border-2  border-pink-400 border-dotted"
 
 let textInputClass =
-  "p-4 h-12 bg-gray-900 border-b-2 border-indigo-50 text-indigo-50 w-full" +
+  "p-4 h-12 bg-gray-800 border-b-2 border-indigo-50 text-indigo-50 w-full" +
   " focus:outline-none "
 
 let labelClassName =

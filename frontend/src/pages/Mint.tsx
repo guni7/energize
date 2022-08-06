@@ -1,12 +1,16 @@
 import { ImageUpload } from "../components/ImageUpload";
 import { MintForm } from "../components/MintForm";
+import Navbar from "../components/Navbar";
 
 
 const Mint = () => {
   return (
-    <div className="flex flex-row w-full">
-      <MintForm />
-      <ImageUpload />
+    <div>
+      <Navbar />
+      <div className="flex flex-row w-full h-screen bg-gray-800">
+        <MintForm />
+        <ImageUpload />
+      </div>
     </div>
   )
 }

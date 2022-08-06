@@ -1,0 +1,1 @@
+export const marketplaceContractAddress = "KT1JUdFQk26him1fKFTiTZ9gVbkRNij8V2fZ";
