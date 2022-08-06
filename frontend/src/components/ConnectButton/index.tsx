@@ -3,32 +3,29 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   selectTezos,
   selectWallet,
-  selectContractAddress,
 } from "../../features/tezos/selectors";
 import {
   setUserAddress,
   setUserBalance,
   setBeaconConnection,
-  setTokenBalances,
-  setStorage,
-  setPublicToken,
   setWallet,
-  //setUserProfile,
+  setPublicToken,
 } from "../../features/tezos/slice";
 import {
   BeaconEvent,
   defaultEventCallbacks,
   NetworkType,
 } from "@airgap/beacon-sdk";
-
+import { selectContract as selectMktContract } from "../../features/marketplace/selectors";
 import { BeaconWallet } from "@taquito/beacon-wallet";
-import { fetchUserBalances } from "../../libs/utils";
-import { AvailableToken, TezosAccountAddress, TokenBalanceInfo, } from "../../types";
+import {  TezosAccountAddress } from "../../types";
+import { setStorage as setMktStorage } from "../../features/marketplace/slice";
 
 const ConnectButton = (): JSX.Element => {
   const dispatch = useDispatch();
   const Tezos = useSelector(selectTezos);
   const wallet = useSelector(selectWallet);
+  const mktContractAddress = useSelector(selectMktContract)
 
   const [publicTkn, setPublicTkn] = useState<string | null>("");
 
@@ -39,25 +36,9 @@ const ConnectButton = (): JSX.Element => {
 
     dispatch(setUserBalance(balance.toNumber()));
 
-    const tokenBalances = await fetchUserBalances(userAddress)
-    //const xtzBalance: TokenBalanceInfo = {
-    //  address: "KT1",
-    //  balance: balance.toNumber(),
-    //  decimals: 6,
-    //  icon: "",
-    //  name: "Tezos",
-    //  symbol: AvailableToken.XTZ,
-    //  type: "FA1.2",
-    //  isApproved: false
-    //}
-    //tokenBalances?.push(xtzBalance);
-    dispatch(setTokenBalances(tokenBalances));
-    const contract = await Tezos.wallet.at('KT19xorVBYtEy5sofm6HTJsP219MtzpybEtu');
-    const storage: any = await contract.storage();
-    dispatch(setStorage(storage));
-
-    //const userProfile = await storage['users'].get(userAddress) as UserProfile;
-    //dispatch(setUserProfile(userProfile))
+    //const mktContract = await Tezos.wallet.at(mktContractAddress);
+    //const mktStorage: any = await mktContract.storage();
+    //dispatch(setMktStorage(mktStorage));
   };
 
   const connectWallet = async () => {
@@ -72,7 +53,6 @@ const ConnectButton = (): JSX.Element => {
       if (userAddress) {
         await setup(userAddress);
       }
-
       dispatch(setBeaconConnection(true));
     } catch (err) {
       console.log(err);
@@ -82,7 +62,7 @@ const ConnectButton = (): JSX.Element => {
   useEffect(() => {
     (async () => {
       const wallet = new BeaconWallet({
-        name: "x_x",
+        name: "energize",
         preferredNetwork: NetworkType.CUSTOM,
         disableDefaultEvents: true,
         eventHandlers: {
@@ -94,7 +74,6 @@ const ConnectButton = (): JSX.Element => {
           },
         },
       });
-      console.log(wallet);
       Tezos.setWalletProvider(wallet);
       dispatch(setWallet(wallet));
 
@@ -125,6 +104,6 @@ export default ConnectButton;
 
 let buttonClass =
   " px-4 py-1 blur-xl" +
-  " text-lg text-indigo-400 font-semibold" +
-  " rounded border-2 border-indigo-400" +
-  " hover:text-black hover:bg-indigo-400 hover:border-transparent"
+  " text-lg text-pink-400 font-semibold" +
+  " rounded border-2 border-pink-400" +
+  " hover:text-black hover:bg-pink-400 hover:border-transparent"

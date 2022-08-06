@@ -26,11 +26,17 @@ const DisconnectButton = () => {
     }
     return (
         <div>
-            <button onClick={disconnectWallet} className="px-4 py-1 text-md text-blue-600 font-semibold rounded-full border border-blue-400 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
-                {userAddress}
+            <button onClick={disconnectWallet} className={buttonClass}>
+                {`${userAddress?.slice(0,10)}.....`}
             </button>
         </div>
     )
 }
 
 export default DisconnectButton;
+
+let buttonClass =
+  " px-4 py-1 blur-xl" +
+  " text-lg text-pink-400 font-semibold" +
+  " rounded border-2 border-pink-400" +
+  " hover:text-black hover:bg-pink-400 hover:border-transparent"

@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux"
-import { AvailableToken } from "../types"
+import Navbar from "../components/Navbar"
 import Mint from "./Mint"
 
 export const Home = () => {
