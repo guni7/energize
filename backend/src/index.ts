@@ -28,10 +28,8 @@ app.get("/", (req, res) => {
 });
 
 app.post("/mint", upload.single("image"), async (req, res) => {
-    console.log('minting');
     const multerReq = req as any;
     if (!multerReq.file) {
-        console.log('no file')
         res.status(500).json({ status: false, msg: "no file provided" });
     } else {
         const fileName = multerReq.file.filename;
@@ -40,9 +38,7 @@ app.post("/mint", upload.single("image"), async (req, res) => {
             .testAuthentication()
             .catch((err: any) => {
                 res.status(500).json(JSON.stringify(err)) 
-                console.log('no authh')
             });
-        console.log(test);
         // creates readable stream
         const readableStreamForFile = fs.createReadStream(`./uploads/${fileName}`);
         const options: any = {
@@ -57,7 +53,6 @@ app.post("/mint", upload.single("image"), async (req, res) => {
             readableStreamForFile,
             options
         );
-        console.log(pinnedFile);
         if (pinnedFile.IpfsHash && pinnedFile.PinSize > 0) {
             // remove file from server
             fs.unlinkSync(`./uploads/${fileName}`);
@@ -89,15 +84,12 @@ app.post("/mint", upload.single("image"), async (req, res) => {
                         metadataHash: pinnedMetadata.IpfsHash
                     }
                 });
-            console.log(pinnedFile.IpfsHash)
             } else {
-                console.log('p');
                 res
                     .status(500)
                     .json({ status: false, msg: "metadata were not pinned" });
             }
         } else {
-            console.log("not piined")
             res.status(500).json({ status: false, msg: "file was not pinned" });
         }
     }
