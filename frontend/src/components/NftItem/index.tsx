@@ -4,6 +4,7 @@ import { selectTezos } from "../../features/tezos/selectors";
 import { marketplaceContractAddress } from "../../libs/constants"
 import { TezosAccountAddress } from "../../types";
 import { bytes2Char } from "@taquito/utils";
+import { useHistory } from "react-router-dom";
 
 type Props = {
   tokenId: string,
@@ -16,6 +17,7 @@ export const NftItem = ({ tokenId, ownerAddress, nftMetadata, price }: Props) =>
 
   const metadataIpfs = bytes2Char(nftMetadata?.value[0][""]);
   const [metadata, setMetadata] = useState<any>(undefined);
+  const history = useHistory();
 
   useEffect(() => {
     async function getMetadata() {
@@ -32,11 +34,11 @@ export const NftItem = ({ tokenId, ownerAddress, nftMetadata, price }: Props) =>
   }, [])
 
   return (
-    <div className="w-1/3 m-2 mb-8">
+    <div className="w-1/3 m-2 mb-8" onClick={() => history.push(`/${ownerAddress}/tokens/${tokenId}`)}>
         <img src={`https://cloudflare-ipfs.com/ipfs/${metadata?.artifactUri.slice(7)}`} alt="nft"></img>
         <div className="flex flex-row text-indigo-50 justify-between">
           <div> {metadata?.name} </div>
-          <div> {ownerAddress} </div>
+          <div> {Number(price)/1000000} tez </div>
         </div>
     </div>
   )

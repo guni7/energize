@@ -17,7 +17,7 @@ export const MintForm = () => {
     dispatch(setTitle(e.target.value));
   }
   return (
-    <div className="flex flex-col w-1/2 ml-16 self-center  items-center">
+    <div className="flex flex-col w-1/2 ml-16 self-center items-center">
       <div className="flex w-full justify-between " >
         <label className="flex text-indigo-50 align-center ml-6 mt-6 " htmlFor="upload"> Choose a file jpeg/png accepted</label>
         <button name="upload" className={buttonClass}>
@@ -35,8 +35,8 @@ export const MintForm = () => {
 }
 
 let buttonClass =
-  " flex m-4 px-4 py-1 blur-xl w-38 self-end" +
-  " text-lg text-pink-400 " +
+  " flex m-4 px-4 py-1 self-end" +
+  " text-pink-400 " +
   " bg-gray-800  border-2  border-pink-400 border-dotted"
 
 let textInputClass =

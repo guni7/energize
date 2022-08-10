@@ -7,7 +7,7 @@ const Mint = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex flex-row w-full h-screen bg-gray-800">
+      <div className="flex flex-row w-full -mt-16 h-screen bg-gray-800">
         <MintForm />
         <ImageUpload />
       </div>

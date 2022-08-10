@@ -9,7 +9,7 @@ import Profile from './pages/Profile';
 import Nft from './pages/Nft';
 function App() {
   return (
-    <div>
+    <div className='font-Rampart text-4xl'>
       <BrowserRouter>
         <Switch>
           <Route exact path="/" component={Home}/>

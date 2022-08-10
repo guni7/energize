@@ -7,10 +7,13 @@ const Navbar = () => {
     const history = useHistory();
     const beaconConnection = useSelector(selectBeaconConnection);
     return (
-        <nav className={`flex justify-between bg-gray-800 p-6`}>
-            <div className='flex ml-96'>
-                <button className='p-2 text-indigo-50' onClick={() => history.push('mint')}> Mint </button> 
-                <button className='p-2 text-indigo-50' onClick={() => history.push('marketplace')}> Marketplace </button> 
+        <nav className={`flex justify-between bg-gray-800 p-6 font-Rampart`}>
+            <div className='w-12 h-12'>
+                <img src="./images/energize.png"></img>
+            </div>
+            <div className='flex '>
+                <button className='p-2 text-indigo-50' onClick={() => history.push('/mint')}> Mint  |  </button> 
+                <button className='p-2 text-indigo-50' onClick={() => history.push('/marketplace')}> Marketplace </button> 
             </div>
             <div className='flex'>
             {
