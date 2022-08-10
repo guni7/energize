@@ -91,8 +91,12 @@ export const ImageUpload = () => {
 
   return (
     <div className="flex flex-col w-1/2 p-2 align-middle justify-center ">
-      <div className="flex w-96 h-96 border-2 border-indigo-50 self-center">
-        <img src={image} alt="uploaded file"></img>
+      <div className="flex w-96 h-96 border-2 border-indigo-50 self-center justify-center ">
+        <img 
+          src={image ? image : './images/placeholder_image.png'} 
+          className={image ? "" : "w-20 h-20  self-center"}
+          alt="uploaded file"
+        ></img>
       </div>
       <input
         hidden
@@ -107,6 +111,6 @@ export const ImageUpload = () => {
 }
 
 let buttonClass =
-  " flex m-4 px-4 py-1 blur-xl w-38 self-center" +
-  " text-lg text-pink-400 " +
+  " flex m-4 px-4 py-1 blur-xl self-center" +
+  " text-pink-400 " +
   " bg-gray-800 border-2 border-pink-400 "

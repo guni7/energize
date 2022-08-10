@@ -1,12 +1,7 @@
 import { useEffect } from "react";
-import { useSelector } from "react-redux";
 import { useHistory } from "react-router-dom";
-import { ImageUpload } from "../components/ImageUpload";
-import { MintForm } from "../components/MintForm";
 import Navbar from "../components/Navbar";
 import { NftItem } from "../components/NftItem";
-import { selectTezos, selectUserAddress } from "../features/tezos/selectors";
-import { marketplaceContractAddress } from "../libs/constants";
 
 
 let marketplaceNfts = [

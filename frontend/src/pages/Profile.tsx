@@ -69,7 +69,6 @@ const Profile = () => {
   return (
     <div>
       <Navbar />
-
       <div className="flex flex-row w-full bg-gray-800 " >
         <div className="flex flex-col items-center w-full">
           {

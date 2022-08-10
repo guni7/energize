@@ -8,7 +8,6 @@ const DisconnectButton = () => {
     const dispatch = useDispatch();
     const wallet = useSelector(selectWallet);
     const userAddress = useSelector(selectUserAddress);
-    const balance = useSelector(selectUserBalance);
     const disconnectWallet = async () => {
 
         dispatch(setUserAddress(""));
@@ -36,7 +35,7 @@ const DisconnectButton = () => {
 export default DisconnectButton;
 
 let buttonClass =
-  " px-4 py-1 blur-xl" +
-  " text-lg text-pink-400 font-semibold" +
+  " px-4 py-1 " +
+  " text-pink-400 " +
   " rounded border-2 border-pink-400" +
   " hover:text-black hover:bg-pink-400 hover:border-transparent"
