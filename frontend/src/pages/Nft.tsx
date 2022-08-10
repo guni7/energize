@@ -4,7 +4,7 @@ import { bytes2Char } from "@taquito/utils";
 import Navbar from "../components/Navbar";
 import { useSelector } from "react-redux";
 import { selectTezos } from "../features/tezos/selectors";
-import { energizeContractAddress as contractAddress, marketplaceContractAddress } from "./../libs/constants";
+import { energizeContractAddress, marketplaceContractAddress } from "./../libs/constants";
 
 type Props = {
   tokenId: string,
@@ -48,6 +48,13 @@ const Nft = () => {
   const [amount, setAmount] = useState<number>(0);
   const Tezos = useSelector(selectTezos)
 
+  const invTokens = {
+    kUSD: {
+      decimals: "18",
+      address: "KT1Wgp6qSsDN7mCaDk5XDEQU52MezE8B9mr5"
+    }
+  }
+
   const nftMetadata = NftInfo.find(info => info.key[0] === nft.key[1]) // TODO make 1 dynamic usinng params
   let metadataIpfs: any;
   if (nftMetadata) {
@@ -59,7 +66,19 @@ const Nft = () => {
   }
 
   const energize = async () => {
-    const contract = await Tezos.wallet.at(contractAddress);
+
+    // Approve Call 
+    const tokenContract = await Tezos.contract.at(invTokens.kUSD.address);
+    const approveMethod = await tokenContract.methods.approve(energizeContractAddress, amount);
+
+    const approveOp = await approveMethod.send({
+      storageLimit: 2000,
+      gasLimit: 500000,
+      fee: 200000
+    });
+    await approveOp.confirmation(3);
+
+    const contract = await Tezos.wallet.at(energizeContractAddress);
     const energizeMethod = contract.methodsObject.energizeWithInterest({
       amount: amount,
       nft_address: marketplaceContractAddress, // TODO 
@@ -70,7 +89,7 @@ const Nft = () => {
     //  storageLimit: 2000, // TODO 
     //  gasLimit: 500000,
     //  fee: 200000,
-    //});
+    //);
 
     console.log(energizeMethod);
     //const confirmation = await op.confirmation(3);
