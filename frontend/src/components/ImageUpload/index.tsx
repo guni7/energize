@@ -6,6 +6,7 @@ import { setMinting, setPinning } from "../../features/marketplace/slice";
 import { selectDescription, selectFile, selectTitle } from "../../features/mintForm/selectors";
 import { setFile } from "../../features/mintForm/slice";
 import { selectTezos, selectUserAddress } from "../../features/tezos/selectors";
+import { marketplaceContractAddress } from "../../libs/constants";
 
 export const ImageUpload = () => {
   const [image, setImage] = useState<any>(undefined);
@@ -50,7 +51,7 @@ export const ImageUpload = () => {
           dispatch(setPinning(false));
           dispatch(setMinting(true));
           // mint here
-          const mktContract = await Tezos.wallet.at("KT1JUdFQk26him1fKFTiTZ9gVbkRNij8V2fZ");
+          const mktContract = await Tezos.wallet.at(marketplaceContractAddress);
           try {
             const op = await mktContract.methods
               .mint('1', data.msg.metadataHash)

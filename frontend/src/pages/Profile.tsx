@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { NftItem } from "../components/NftItem";
 import { selectTezos, selectUserAddress } from "../features/tezos/selectors";
@@ -37,7 +38,7 @@ let marketplaceNfts = [
       ]
   }
 ]
-let NftInfo = [
+let nftInfo = [
   {
     "key": {
       "0": "1",
@@ -54,13 +55,24 @@ let NftInfo = [
 ]
 
 const Profile = () => {
-
-  const userAddress = useSelector(selectUserAddress);
-  const Tezos = useSelector(selectTezos);
-  const userNfts = marketplaceNfts.filter(nft => nft.key[0] === userAddress)
+  const [userNfts, setUserNfts] = useState<any>([]);
+  const [nftInfo, setNftInfo] = useState<any>([]);
+  const params: any = useParams();
+  const userAddress = params.user;
   useEffect(() => {
     async function getStorage() {
       try {
+        const apiTokens = "https://api.ghost.tzstats.com/explorer/bigmap/161473/values" // TODO make dynamic
+        const res = await fetch(apiTokens);
+        const data = await res.json();
+        console.log(userAddress)
+        console.log(data.filter((nft: any) => nft.key[0] === userAddress));
+        setUserNfts(data.filter((nft: any) => nft.key[0] === userAddress));
+        const apiNftInfo = "https://api.ghost.tzstats.com/explorer/bigmap/161477/values" // TODO 
+        const res2 = await fetch(apiNftInfo);
+        const data2 = await res2.json();
+        setNftInfo(data2);
+        console.log(data2)
       } catch (e) {
       }
     }
@@ -69,18 +81,26 @@ const Profile = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex flex-row w-full bg-gray-800 " >
+      <div className="flex flex-row w-full bg-gray-800 h-" >
         <div className="flex flex-col items-center w-full">
           {
-            userNfts.map((nft) => {
-              return (
-                <NftItem
-                  tokenId={nft.key[1]}
-                  ownerAddress={nft.key[0]}
-                  nftMetadata={NftInfo.find(info => info.key[0] === nft.key[1])}
-                  price={nft.value[0].price_per_token}
-                />
-              )
+            userNfts.map((nft: any) => {
+              if (nft && nftInfo.length !== 0) {
+                return (
+                  <NftItem
+                    tokenId={nft.key[1]}
+                    ownerAddress={nft.key[0]}
+                    nftMetadata={nftInfo.find((info:any) => info.key[0] === nft.key[1])}
+                    price={nft.value[0].price_per_token}
+                  />
+                )
+              } else {
+                return (
+                  <div>
+                    no nfts
+                  </div>
+                )
+              }
             })
           }
         </div>
