@@ -32,7 +32,7 @@ export const ImageUpload = () => {
       }
       console.log(userAddress);
       console.log(file);
-      const response = await fetch(`http://localhost:8080/mint`, {
+      const response = await fetch(`https://energize-backend.herokuapp.com/mint`, {
         method: "POST",
         headers: {
           "Access-Control-Allow-Origin": "*"
