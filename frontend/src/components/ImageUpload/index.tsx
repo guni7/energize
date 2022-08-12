@@ -34,8 +34,11 @@ export const ImageUpload = () => {
       console.log(file);
       const response = await fetch(`https://energize-backend.herokuapp.com/mint`, {
         method: "POST",
-        body: data,
+        body: JSON.stringify(data),
         mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response) {
