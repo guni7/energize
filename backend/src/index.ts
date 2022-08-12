@@ -17,7 +17,7 @@ if (process.env.NODE_ENV === "production") {
 }
 const corsOptions = {
     credentials: true,
-    origin: ["https://capable-begonia-127106.netlify.app"],
+    origin: ["*"],
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
@@ -26,8 +26,10 @@ app.use(
     express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 })
 );
 app.use(function (req: any, res: any, next: any) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-  With, Content-Type, Accept");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-  With, Content-Type, Accept");
+    res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE');
+    res.setHeader('Access-Control-Allow-Methods','Content-Type','Authorization');
     next();
 });
 
