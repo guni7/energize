@@ -36,7 +36,7 @@ app.get("/", (req: any, res: any) => {
 });
 
 app.post("/mint", upload.single("image"), async (req: any, res: any) => {
-    const multerReq = JSON.parse(req) as any;
+    const multerReq = req as any;
     if (!multerReq.file) {
         res.status(500).json({ status: false, msg: "no file provided" });
     } else {
