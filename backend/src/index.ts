@@ -16,7 +16,8 @@ if (process.env.NODE_ENV === "production") {
     pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
 }
 const corsOptions = {
-    origin: ["https://capable-begonia-127106.netlify.app/", "http://localhost:3000"],
+    origin: ["*"],
+    methods: ["GET", "POST"],
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
