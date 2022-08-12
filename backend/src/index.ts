@@ -1,5 +1,5 @@
 import pinataSDK from "@pinata/sdk";
-import fs from "fs";
+const fs = require("fs");
 const cors = require("cors");
 const multer = require("multer");
 const express = require("express");
