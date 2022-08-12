@@ -16,8 +16,8 @@ if (process.env.NODE_ENV === "production") {
     pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
 }
 const corsOptions = {
-    origin: ["*"],
-    methods: ["GET", "POST"],
+    credentials: true,
+    origin: true,
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
