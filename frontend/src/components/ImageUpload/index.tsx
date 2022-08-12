@@ -37,6 +37,7 @@ export const ImageUpload = () => {
         headers: {
           "Access-Control-Allow-Origin": "*"
         },
+        mode: "cors",
         body: data
       });
 
