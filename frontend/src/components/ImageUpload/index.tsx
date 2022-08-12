@@ -36,9 +36,6 @@ export const ImageUpload = () => {
         method: "POST",
         body: data,
         mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        }
       });
 
       if (response) {
