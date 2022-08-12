@@ -4,7 +4,7 @@ const cors = require("cors");
 const multer = require("multer");
 const express = require("express");
 
-const app : any = express();
+const app: any = express();
 const upload = multer({ dest: "uploads/" });
 const port = process.env.NODE_ENV === "production" ? process.env.PORT : 8080; // default port to listen
 console.log("PORT", port);
@@ -25,6 +25,12 @@ app.use(express.json({ limit: "50mb" }));
 app.use(
     express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 })
 );
+app.use(function (req: any, res: any, next: any) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-  With, Content-Type, Accept");
+    next();
+});
+
 app.get("/", (req: any, res: any) => {
     res.send("Hello developers!");
 });
@@ -39,7 +45,7 @@ app.post("/mint", upload.single("image"), async (req: any, res: any) => {
         let test = await pinata
             .testAuthentication()
             .catch((err: any) => {
-                res.status(500).json(JSON.stringify(err)) 
+                res.status(500).json(JSON.stringify(err))
             });
         // creates readable stream
         const readableStreamForFile = fs.createReadStream(`./uploads/${fileName}`);
