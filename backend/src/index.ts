@@ -4,7 +4,7 @@ import fs from "fs";
 const cors = require("cors");
 const multer = require("multer");
 
-const app = express();
+const app : any = express();
 const upload = multer({ dest: "uploads/" });
 const port = process.env.NODE_ENV === "production" ? process.env.PORT : 8080; // default port to listen
 console.log("PORT", port);
@@ -24,11 +24,11 @@ app.use(express.json({ limit: "50mb" }));
 app.use(
     express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 })
 );
-app.get("/", (req, res) => {
+app.get("/", (req: any, res: any) => {
     res.send("Hello developers!");
 });
 
-app.post("/mint", upload.single("image"), async (req, res) => {
+app.post("/mint", upload.single("image"), async (req: any, res: any) => {
     const multerReq = req as any;
     if (!multerReq.file) {
         res.status(500).json({ status: false, msg: "no file provided" });
