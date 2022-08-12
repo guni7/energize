@@ -1,8 +1,8 @@
-import express from "express";
 import pinataSDK from "@pinata/sdk";
 import fs from "fs";
 const cors = require("cors");
 const multer = require("multer");
+const express = require("express");
 
 const app : any = express();
 const upload = multer({ dest: "uploads/" });
