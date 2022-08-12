@@ -17,7 +17,7 @@ if (process.env.NODE_ENV === "production") {
 }
 const corsOptions = {
     credentials: true,
-    origin: true,
+    origin: ["https://capable-begonia-127106.netlify.app"],
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
