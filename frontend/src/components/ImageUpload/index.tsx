@@ -35,6 +35,10 @@ export const ImageUpload = () => {
       const response = await fetch(`https://energize-backend.herokuapp.com/mint`, {
         method: "POST",
         body: data,
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response) {
@@ -90,8 +94,8 @@ export const ImageUpload = () => {
   return (
     <div className="flex flex-col w-1/2 p-2 align-middle justify-center ">
       <div className="flex w-96 h-96 border-2 border-indigo-50 self-center justify-center ">
-        <img 
-          src={image ? image : './images/placeholder_image.png'} 
+        <img
+          src={image ? image : './images/placeholder_image.png'}
           className={image ? "" : "w-20 h-20  self-center"}
           alt="uploaded file"
         ></img>
