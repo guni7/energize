@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === "production") {
     pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
 }
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://my-cool-nft-app.com"],
+    origin: ["*"],
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
