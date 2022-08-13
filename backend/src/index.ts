@@ -22,13 +22,7 @@ const corsOptions = {
     methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
 };
 app.use(cors(corsOptions));
-app.options("/", (req: any, res: any) => {
-    res.setHeader("Access-Control-Allow-Origin", "https://capable-begonia-127106.netlify.app");
-    res.setHeader("Access-Control-Allow-Methods", "POST, GET, PUT");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.sendStatus(204);
-  });
-  
+app.options(cors(corsOptions));
 app.use(express.json({ limit: "50mb" }));
 app.use(
     express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 })
