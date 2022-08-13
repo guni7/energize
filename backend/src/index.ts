@@ -16,22 +16,32 @@ if (process.env.NODE_ENV === "production") {
     pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
 }
 const corsOptions = {
-    credentials: true,
     origin: ["*", "https://capable-begonia-127106.netlify.app/"],
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'PUT', 'POST'],
 };
 app.use(cors(corsOptions));
+
+app.use((req: any, res:any, next: any) => {
+    res.header("Access-Control-Allow-Origin", "*")
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested, Content-Type, Accept Authorization"
+    )
+    if (req.method === "OPTIONS") {
+        res.header(
+            "Access-Control-Allow-Methods",
+            "POST, PUT, PATCH, GET, DELETE"
+        )
+        return res.status(200).json({})
+    }
+    next()
+})
+
 app.use(express.json({ limit: "50mb" }));
 app.use(
     express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 })
 );
-app.use(function (req: any, res: any, next: any) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-  With, Content-Type, Accept");
-    res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE');
-    res.setHeader('Access-Control-Allow-Methods','Content-Type','Authorization');
-    next();
-});
 
 app.get("/", (req: any, res: any) => {
     res.send("Hello developers!");
