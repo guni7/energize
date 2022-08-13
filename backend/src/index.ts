@@ -16,14 +16,14 @@ if (process.env.NODE_ENV === "production") {
     pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
 }
 const corsOptions = {
-    origin: "https://capable-begonia-127106.netlify.app/",
+    origin: "https://capable-begonia-127106.netlify.app",
     optionsSuccessStatus: 200,
     credenitals: true,
     methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
 };
 app.use(cors(corsOptions));
 app.options("/", (req: any, res: any) => {
-    res.setHeader("Access-Control-Allow-Origin", "https://capable-begonia-127106.netlify.app/");
+    res.setHeader("Access-Control-Allow-Origin", "https://capable-begonia-127106.netlify.app");
     res.setHeader("Access-Control-Allow-Methods", "POST, GET, PUT");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.sendStatus(204);
