@@ -1,6 +1,6 @@
 import pinataSDK from "@pinata/sdk";
 const fs = require("fs");
-const cors = require("cors");
+//const cors = require("cors");
 const multer = require("multer");
 const express = require("express");
 
@@ -15,28 +15,29 @@ if (process.env.NODE_ENV === "production") {
     const PinataKeys = require("./PinataKeys").default;
     pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
 }
-const corsOptions = {
-    origin: ["*", "https://capable-begonia-127106.netlify.app/"],
-    optionsSuccessStatus: 200,
-    methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
-};
-app.use(cors(corsOptions));
+//const corsOptions = {
+//    origin: ["*", "https://capable-begonia-127106.netlify.app/"],
+//    optionsSuccessStatus: 200,
+//    methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
+//};
+//app.use(cors(corsOptions));
 
-//app.use((req: any, res: any, next: any) => {
-//    res.header("Access-Control-Allow-Origin", "*")
-//    res.header(
-//      "Access-Control-Allow-Headers",
-//      "Origin, X-Requested, Content-Type, Accept Authorization"
-//    )
-//    if (req.method === "OPTIONS") {
-//      res.header(
-//        "Access-Control-Allow-Methods",
-//        "POST, PUT, PATCH, GET, DELETE", "OPTIONS"
-//      )
-//      return res.status(200).json({})
-//    }
-//    next()
-//  })
+app.use((req: any, res: any, next: any) => {
+    res.header("Access-Control-Allow-Origin", "*")
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested, Content-Type, Accept Authorization"
+    )
+    if (req.method === "OPTIONS") {
+        res.header(
+            "Access-Control-Allow-Methods",
+            "POST, PUT, PATCH, GET, DELETE", "OPTIONS"
+        )
+        return res.status(200).json({})
+    }
+    next()
+})
+
 app.use(express.json({ limit: "50mb" }));
 app.use(
     express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 })
@@ -45,8 +46,6 @@ app.use(
 app.get("/", (req: any, res: any) => {
     res.send("Hello developers!");
 });
-
-app.options('/mint', cors());
 
 app.post("/mint", upload.single("image"), async (req: any, res: any) => {
     const multerReq = req as any;
