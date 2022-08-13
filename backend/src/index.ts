@@ -21,7 +21,7 @@ const corsOptions = {
     methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('https://capable-begonia-127106.netlify.app/', cors(corsOptions));
 
 app.use(express.json({ limit: "50mb" }));
 app.use(
