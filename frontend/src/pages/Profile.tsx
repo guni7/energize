@@ -81,7 +81,7 @@ const Profile = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex flex-row w-full bg-gray-800 h-" >
+      <div className="flex flex-row w-full bg-gray-800 h-screen" >
         <div className="flex flex-col items-center w-full">
           {
             userNfts.map((nft: any) => {
