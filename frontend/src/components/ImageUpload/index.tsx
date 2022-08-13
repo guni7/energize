@@ -35,9 +35,6 @@ export const ImageUpload = () => {
       const response = await fetch(`https://energize-backend.herokuapp.com/mint`, {
         method: "POST",
         body: data,
-        headers: {
-          "Access-Control-Allow-Origin": "*"
-        },
       });
 
       if (response) {
