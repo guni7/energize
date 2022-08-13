@@ -15,19 +15,13 @@ if (process.env.NODE_ENV === "production") {
     const PinataKeys = require("./PinataKeys").default;
     pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
 }
-//const corsOptions = {
-//    origin: ["*", "https://capable-begonia-127106.netlify.app/"],
-//    optionsSuccessStatus: 200,
-//    methods: ['GET', 'PUT', 'POST'],
-//};
-//app.use(cors(corsOptions));
-
-app.use(function(req: any, res: any, next: any) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-    next();
-  });
+const corsOptions = {
+    origin: ["*", "https://capable-begonia-127106.netlify.app/"],
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'PUT', 'POST'],
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions))
 
 app.use(express.json({ limit: "50mb" }));
 app.use(
