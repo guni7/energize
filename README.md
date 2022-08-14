@@ -1,3 +1,5 @@
+NOTE - The frontend is hosted at - https://capable-begonia-127106.netlify.app/ , to mint an nft, you need to have ![this](https://chrome.google.com/webstore/detail/cross-domain-cors/mjhpgnbimicffchbodmgfnemoghjakai/related?utm_source=chrome-ntp-icon ) extension installed. You can still test the main functionality (energize, withdraw) without the extension though.
+
 # energize
 
 Energize is a protocol that lets you put digital assets inside your NFTs. This protocol allows users to deposit FA1.2 or FA2 tokens (ANY tokens) into an NFT. Energize enables the creation of yield bearing DeFi NFTs (through a bridge to Yupana), time locked capsules, in game assets, and so much more.
@@ -20,8 +22,11 @@ When withdrawing from the NFT Smart Wallet (which can be done by the owner of th
 #Smart Contracts
 
 The contracts can be found on the ghostnet at these addresses - 
+
 Energize Contract - KT1RDB7Q8jKgQnarhDaHJx9xUyakemMnUk73
+
 kUSD Wallet Manager - KT1Wgp6qSsDN7mCaDk5XDEQU52MezE8B9mr5
+
 Example Smart Wallet With yKUSD tokens invested - KT1JqTPhNcaJaakNBQVHEFbgCmo7mGKsx61H
 
 Energize Contract - 
