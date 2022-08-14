@@ -8,13 +8,9 @@ const app: any = express();
 const upload = multer({ dest: "uploads/" });
 const port = process.env.NODE_ENV === "production" ? process.env.PORT : 8080; // default port to listen
 console.log("PORT", port);
-let pinata: any;
-if (process.env.NODE_ENV === "production") {
-    pinata = pinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY);
-} else {
-    const PinataKeys = require("./PinataKeys").default;
-    pinata = pinataSDK(PinataKeys.apiKey, PinataKeys.apiSecret);
-}
+
+let pinata: any = pinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY);;
+
 const corsOptions = {
     origin: "https://energize-frontend.herokuapp.com",
     optionsSuccessStatus: 200,
