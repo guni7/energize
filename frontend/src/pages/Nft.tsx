@@ -55,24 +55,6 @@ const Nft = () => {
   const energize = async () => {
     // Approve Call 
     const tokenContract = await Tezos.wallet.at(invTokens.kUSD.address);
-    const approveMethod1 = await tokenContract.methods.approve(energizeContractAddress, 0);
-
-    const approveOp = await approveMethod1.send({
-      storageLimit: 2000,
-      gasLimit: 500000,
-      fee: 200000
-    });
-    await approveOp.confirmation(1);
-
-    const approveMethod2 = await tokenContract.methods.approve(energizeContractAddress, amount);
-
-    const approveOp2 = await approveMethod2.send({
-      storageLimit: 2000,
-      gasLimit: 500000,
-      fee: 200000
-    });
-    await approveOp2.confirmation(1);
-
     const contract = await Tezos.wallet.at(energizeContractAddress);
     const energizeMethod = contract.methodsObject.energizeWithInterest({
       amount: amount,
@@ -80,45 +62,41 @@ const Nft = () => {
       nft_id: params.tokenId,
       token_id: 0 // TODO make dynamic
     });
-    const op = await energizeMethod.send({
-      storageLimit: 2000, // TODO 
-      gasLimit: 500000,
-      fee: 200000,
-    });
 
+    // here
+    const batch = await Tezos.wallet.batch()
+      .withContractCall(tokenContract.methods.approve(energizeContractAddress, 0))
+      .withContractCall(tokenContract.methods.approve(energizeContractAddress, amount))
+      .withContractCall(contract.methodsObject.energizeWithInterest({
+        amount: amount,
+        nft_address: marketplaceContractAddress,
+        nft_id: params.tokenId,
+        token_id: 0 // TODO make dynamic
+      }));
+    const op = await batch.send();
     const confirmation = await op.confirmation(1);
     //TODO update storage
   }
 
   const setOnMarketplace = async () => {
     const marketplaceContract = await Tezos.wallet.at(marketplaceContractAddress);
-    const updateOperatorsMethod = await marketplaceContract.methods.update_operators([
-      {
-        add_operator: {
-          owner: params.user,
-          operator: marketplaceContractAddress,
-          token_id: params.tokenId
+    const batch = await Tezos.wallet.batch()
+      .withContractCall(marketplaceContract.methods.update_operators([
+        {
+          add_operator: {
+            owner: params.user,
+            operator: marketplaceContractAddress,
+            token_id: params.tokenId
+          }
         }
-      }
-    ])
-    const updateOp = await updateOperatorsMethod.send({
-      storageLimit: 2000,
-      gasLimit: 500000,
-      fee: 200000
-    });
-    const confirmation = await updateOp.confirmation(1);
-
-    const setOnMarketplaceMethod = marketplaceContract.methodsObject.set_on_market_place({
-      price_per_token: sellingPrice,
-      token_amount: "1",
-      token_id: params.tokenId
-    })
-    const setOnMarketplaceOp = await setOnMarketplaceMethod.send({
-      storageLimit: 2000,
-      gasLimit: 500000,
-      fee: 200000
-    });
-    const confirmation2 = await setOnMarketplaceOp.confirmation(1);
+      ]))
+      .withContractCall(marketplaceContract.methodsObject.set_on_market_place({
+        price_per_token: sellingPrice,
+        token_amount: "1",
+        token_id: params.tokenId
+      }));
+    const op = await batch.send();
+    const confirmation = await op.confirmation(1);
   }
 
   useEffect(() => {
@@ -201,7 +179,7 @@ const Nft = () => {
             src={`https://cloudflare-ipfs.com/ipfs/${metadata?.artifactUri.slice(7)}`} alt="nft"
           />
           <div className="text-pink-400 ">
-          kUSD - {Number(balance)/1000000000000000000}
+            kUSD - {Number(balance) / 1000000000000000000}
           </div>
         </div>
         <div className="m-12">
