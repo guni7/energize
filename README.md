@@ -15,7 +15,7 @@ The smart wallet is then responsible for depositing the asset tokens into the Yu
 
 When withdrawing from the NFT Smart Wallet (which can be done by the owner of the nft only), the Yield Tokens are redeemed for the underlying Asset Tokens from Yupana. The Smart Wallet is responsible for handling both the Principal and Interest. 
 
-# Architecture
+#  Smart Contract Architecture
 
 ![Architecture](https://i.imgur.com/5ip4S9g.png)
 
