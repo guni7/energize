@@ -13,7 +13,7 @@ console.log("PORT", port);
 let pinata: any = pinataSDK("1cb57f71a4f0c6213e55", "6bceda556367754766bddd9b8334aca687208a78196b8216c943c0351ce0dcb1");
 
 const corsOptions = {
-    origin: "https://energize-frontend.herokuapp.com",
+    origin: ["https://energize-frontend.herokuapp.com", "https://capable-begonia-127106.netlify.app/"],
     optionsSuccessStatus: 200,
     credenitals: true,
     methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
